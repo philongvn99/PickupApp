@@ -4,7 +4,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Component } from 'react';
 import HomeScreen from './components/HomeScreen';
-import SettingsScreen from './components/SettingsScreen'; 
+import Floor1Screen from './components/Floor1Screen'; 
+import Floor2Screen from './components/Floor2Screen'; 
+import Floor3Screen from './components/Floor3Screen'; 
+import Floor4Screen from './components/Floor4Screen'; 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export default class App extends Component {
@@ -15,8 +18,18 @@ export default class App extends Component {
     return (
       <NavigationContainer>
         <Tab.Navigator>
+          <Tab.Screen name="Home"
+            component={HomeScreen}
+            options={{
+              tabBarLabel: 'Quản trị',
+              tabBarIcon: ({ color, size }) => (
+                <MaterialCommunityIcons name="database-settings" color={color} size={size} />
+              ),
+            }}
+          />
+
           <Tab.Screen name="Floor1" 
-            component={HomeScreen} 
+            component={Floor1Screen} 
             options={{
               tabBarLabel: 'Tầng 1',
               tabBarIcon: ({ color, size }) => (
@@ -26,7 +39,7 @@ export default class App extends Component {
           />
 
           <Tab.Screen name="Floor2" 
-            component={SettingsScreen} 
+            component={Floor2Screen} 
             options={{
               tabBarLabel: 'Tầng 2',
               tabBarIcon: ({ color, size }) => (
@@ -36,7 +49,7 @@ export default class App extends Component {
           />
 
           <Tab.Screen name="Floor3"
-            component={SettingsScreen}
+            component={Floor3Screen}
             options={{
               tabBarLabel: 'Tầng 3',
               tabBarIcon: ({ color, size }) => (
@@ -46,7 +59,7 @@ export default class App extends Component {
           />
 
           <Tab.Screen name="TopRoof"
-            component={SettingsScreen}
+            component={Floor4Screen}
             options={{
               tabBarLabel: 'Sân thượng',
               tabBarIcon: ({ color, size }) => (

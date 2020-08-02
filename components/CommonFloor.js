@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import SquareGrid from "react-native-square-grid";
 import Modal from 'react-native-modal';
+import firebase from 'firebase';
 
 
 export default class CommonFloor extends Component {
@@ -18,7 +19,7 @@ export default class CommonFloor extends Component {
             isModalVisible: false,
             selectedIndex: -1,
             modalTableNo: '',
-            tables: [],            
+            tables: []
         }
     }
 
@@ -35,7 +36,62 @@ export default class CommonFloor extends Component {
                 status: this.STATUS.INACTIVE
             })
         }
-        this.setState({ tables})
+        this.setState({tables}, () => {
+            const firebaseConfig = {
+                apiKey: "AIzaSyBb1WeqLnVcVvPGAqNObH3SN8ZV6JOQWYY",
+                authDomain: "eco-giong.firebaseapp.com",
+                databaseURL: "https://eco-giong.firebaseio.com",
+                projectId: "eco-giong",
+                storageBucket: "eco-giong.appspot.com",
+                messagingSenderId: "352848277484",
+                appId: "1:352848277484:web:a663999123b9cf90291ac9"
+            };
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            this.readTableData(this.props.floor)
+        })      
+    }
+
+    writeTableData(floor, tableIndex, tableNo, status) {
+        const database = firebase.database();
+        const rootRef = database.ref('tables');
+        rootRef.child(floor).child(tableIndex).set({
+            tableNo,
+            status
+        }).then((data) => {
+            //success callback
+            console.log('data ', data)
+        }).catch((error) => {
+            //error callback
+            console.log('error ', error)
+        })
+    }
+
+    readTableData(floor) {
+        const database = firebase.database();
+        const rootRef = database.ref('tables');
+        rootRef.child(floor).on('value', snapshot => {
+            this.setState({
+                data: snapshot.val()
+            }, () => {
+                this.renderTableData()
+            })
+        })
+    }
+
+    renderTableData() {                
+        let {data, tables} = this.state
+        if(data && typeof data !=='undefined') {
+            tables.forEach((table, index) => {
+                let t = data[index]
+                if(t && typeof t !=='undefined') {
+                    table.status = t.status,
+                    table.tableNo = t.tableNo
+                }
+            })
+            this.setState({tables})
+        }
     }
 
     render() {
@@ -88,6 +144,8 @@ export default class CommonFloor extends Component {
             selectedIndex: -1,
             modalTableNo: ''            
         })
+
+        this.writeTableData(this.props.floor, selectedIndex, modalTableNo, this.STATUS.ACTIVE)
     }
 
     renderItem = (item, index) => {
