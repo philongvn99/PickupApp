@@ -21,7 +21,7 @@ export default class App extends Component {
           <Tab.Screen name="Home"
             component={HomeScreen}
             options={{
-              tabBarLabel: 'Quản trị',
+              tabBarLabel: 'Quản lý',
               tabBarIcon: ({ color, size }) => (
                 <MaterialCommunityIcons name="database-settings" color={color} size={size} />
               ),

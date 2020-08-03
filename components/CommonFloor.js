@@ -10,7 +10,7 @@ import {
 import SquareGrid from "react-native-square-grid";
 import Modal from 'react-native-modal';
 import firebase from 'firebase';
-
+import tableConfig from '../config/tableConfig.json'
 
 export default class CommonFloor extends Component {
     constructor(props) {
@@ -18,24 +18,27 @@ export default class CommonFloor extends Component {
         this.state = {
             isModalVisible: false,
             selectedIndex: -1,
+            selectedStatus: -1,
             modalTableNo: '',
             tables: []
         }
     }
 
     STATUS = {
-        'ACTIVE': 1,
+        'CHECKEDIN': 2,
+        'AVAILABLE': 1,
         'INACTIVE': 0
     }
 
     componentDidMount() {
-        let tables = []
-        for(let i=0; i< 48; i++) {
+        let tables = []        
+        for(let i=0; i< tableConfig.tables[this.props.floor-1].length; i++) {
             tables.push({
                 tableNo: '',
-                status: this.STATUS.INACTIVE
+                status: tableConfig.tables[this.props.floor-1][i]
             })
         }
+
         this.setState({tables}, () => {
             const firebaseConfig = {
                 apiKey: "AIzaSyBb1WeqLnVcVvPGAqNObH3SN8ZV6JOQWYY",
@@ -61,7 +64,7 @@ export default class CommonFloor extends Component {
             status
         }).then((data) => {
             //success callback
-            console.log('data ', data)
+            //console.log('data ', data)
         }).catch((error) => {
             //error callback
             console.log('error ', error)
@@ -102,21 +105,40 @@ export default class CommonFloor extends Component {
                 <Modal isVisible={this.state.isModalVisible}>
                     <View style={{ flex: 1,
                         alignItems: 'center',
+                        maxHeight: 200,
                         justifyContent: 'center',
                         backgroundColor: '#FFF'
                         }}>
                             
-                        <TextInput
-                            keyboardType='numeric'
-                            style={{ height: 40, borderColor: 'gray', borderWidth: 1, width: 100, marginBottom: 10 }}
-                            onChangeText={value => this.onChangeText(value)}
-                            value={this.state.modalTableNo}
-                        />
+                        {this.state.selectedStatus == this.STATUS.AVAILABLE && <View>
+                            <TextInput
+                                keyboardType='numeric'
+                                style={{
+                                    height: 40,
+                                    borderColor: 'gray',
+                                    borderWidth: 1,
+                                    width: 100,
+                                    marginBottom: 20,
+                                }}
+                                placeholder='Nhập thẻ bàn'
+                                onChangeText={value => this.onChangeText(value)}
+                                value={this.state.modalTableNo}
+                            />
+                        
+                            <Button
+                                onPress={() => {
+                                    this.checkin()
+                                }} title="Check in" />     
+                        </View>         
+                        }
 
-                        <Button 
-                            onPress={() => {                                
-                                this.submit()
-                        }} title="Submit" />
+                        {this.state.selectedStatus==this.STATUS.CHECKEDIN && 
+                            <Button
+                                onPress={() => {
+                                    this.checkout()
+                                }} title="Check out" />     
+                            }  
+                            
                     </View>
                 </Modal>
             </View>
@@ -129,23 +151,47 @@ export default class CommonFloor extends Component {
         })
     }
 
-    showModal = () => {
-        this.setState({
-            isModalVisible: true
-        })
+    showModal = (status) => {
+        if(status!=this.STATUS.INACTIVE) {
+            this.setState({
+                isModalVisible: true
+            })
+        }        
     }
 
-    submit() {
-        let {tables, selectedIndex, modalTableNo} = this.state        
-        tables[selectedIndex].tableNo = modalTableNo
-        tables[selectedIndex].status = this.STATUS.ACTIVE
-        this.setState({
-            isModalVisible: false,
-            selectedIndex: -1,
-            modalTableNo: ''            
+    checkDuplicatedTableNo(floor, selectedIndex, tableNo) {
+        const database = firebase.database();
+        const rootRef = database.ref('tables/'+floor);
+        rootRef.child(selectedIndex).once('value', snapshot => {
+            var dbTableNo = (snapshot.val() && snapshot.val().username) || '';
+            if (dbTableNo==tableNo) {
+                return true
+            }
         })
+        return false
+    }
 
-        this.writeTableData(this.props.floor, selectedIndex, modalTableNo, this.STATUS.ACTIVE)
+    checkin() {
+        let {tables, selectedIndex, modalTableNo} = this.state       
+        var found = this.checkDuplicatedTableNo(this.props.floor, selectedIndex, modalTableNo) 
+        if(!found) {
+            tables[selectedIndex].tableNo = modalTableNo
+            tables[selectedIndex].status = this.STATUS.ACTIVE
+            this.setState({
+                isModalVisible: false,
+                selectedIndex: -1,
+                selectedStatus: -1,
+                modalTableNo: ''
+            })
+            this.writeTableData(this.props.floor, selectedIndex, modalTableNo, this.STATUS.CHECKEDIN)
+        }
+        else {
+            console.log('table no found, can not write')
+        }
+    }
+
+    checkout() {
+        console.log('checked out');
     }
 
     renderItem = (item, index) => {
@@ -155,12 +201,12 @@ export default class CommonFloor extends Component {
                 alignSelf: "stretch",
                 padding: 5
                 }} onPress={() => {
-                    this.showModal()
-                    this.setState({selectedIndex: index})
+                    this.showModal(item.status)
+                    this.setState({selectedIndex: index, selectedStatus: item.status})
                 }}>
                 <View style={[
                     {flex: 1},
-                    item.status == this.STATUS.ACTIVE ? {backgroundColor: 'green'} : {backgroundColor: "#ccc"},
+                    item.status == this.STATUS.CHECKEDIN ? { backgroundColor: 'red' } : (item.status == this.STATUS.AVAILABLE ? { backgroundColor: "green"} : { backgroundColor: "#ccc" }),
                     {alignItems: "center"},
                     {justifyContent: "center"}
                 ]}>                    
