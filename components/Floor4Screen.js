@@ -7,7 +7,7 @@ export default class Floor4Screen extends Component {
     render() {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <CommonFloor floor={4} />
+                <CommonFloor floor={3} />
             </View>
         );
     }

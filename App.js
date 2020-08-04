@@ -9,8 +9,18 @@ import Floor2Screen from './components/Floor2Screen';
 import Floor3Screen from './components/Floor3Screen'; 
 import Floor4Screen from './components/Floor4Screen'; 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import firebase from 'firebase';
+import { firebaseConfig} from './config/config'
 
 export default class App extends Component {
+  constructor(props) {
+    super(props)
+  
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+  }
 
   render() {
     let Tab = createBottomTabNavigator();

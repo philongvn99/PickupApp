@@ -10,7 +10,6 @@ import {
 import SquareGrid from "react-native-square-grid";
 import Modal from 'react-native-modal';
 import firebase from 'firebase';
-import tableConfig from '../config/tableConfig.json'
 
 export default class CommonFloor extends Component {
     constructor(props) {
@@ -20,7 +19,8 @@ export default class CommonFloor extends Component {
             selectedIndex: -1,
             selectedStatus: -1,
             modalTableNo: '',
-            tables: []
+            tables: [], 
+            defaultTables: []
         }
     }
 
@@ -31,49 +31,37 @@ export default class CommonFloor extends Component {
     }
 
     componentDidMount() {
-        let tables = []        
-        for(let i=0; i< tableConfig.tables[this.props.floor-1].length; i++) {
-            tables.push({
-                tableNo: '',
-                status: tableConfig.tables[this.props.floor-1][i]
-            })
-        }
-
-        this.setState({tables}, () => {
-            const firebaseConfig = {
-                apiKey: "AIzaSyBb1WeqLnVcVvPGAqNObH3SN8ZV6JOQWYY",
-                authDomain: "eco-giong.firebaseapp.com",
-                databaseURL: "https://eco-giong.firebaseio.com",
-                projectId: "eco-giong",
-                storageBucket: "eco-giong.appspot.com",
-                messagingSenderId: "352848277484",
-                appId: "1:352848277484:web:a663999123b9cf90291ac9"
-            };
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
+        let tables = []   
+        const database = firebase.database();
+        const ref = database.ref('/tables');
+        ref.child(this.props.floor).once('value', snapshot => {
+            let defaultTables = snapshot.val()
+            for (let i = 0; i < defaultTables.length; i++) {
+                tables.push({
+                    tableNo: '',
+                    status: defaultTables[i]
+                })
             }
-            this.readTableData(this.props.floor)
-        })      
+
+            this.setState({ tables, defaultTables }, () => {
+                this.readTableData(this.props.floor)
+            })    
+        })
+          
     }
 
     writeTableData(floor, tableIndex, tableNo, status) {
         const database = firebase.database();
-        const rootRef = database.ref('tables');
+        const rootRef = database.ref('/current/tables');
         rootRef.child(floor).child(tableIndex).set({
             tableNo,
             status
-        }).then((data) => {
-            //success callback
-            //console.log('data ', data)
-        }).catch((error) => {
-            //error callback
-            console.log('error ', error)
         })
     }
 
     readTableData(floor) {
         const database = firebase.database();
-        const rootRef = database.ref('tables');
+        const rootRef = database.ref('/current/tables');
         rootRef.child(floor).on('value', snapshot => {
             this.setState({
                 data: snapshot.val()
@@ -159,39 +147,49 @@ export default class CommonFloor extends Component {
         }        
     }
 
-    checkDuplicatedTableNo(floor, selectedIndex, tableNo) {
-        const database = firebase.database();
-        const rootRef = database.ref('tables/'+floor);
-        rootRef.child(selectedIndex).once('value', snapshot => {
-            var dbTableNo = (snapshot.val() && snapshot.val().username) || '';
-            if (dbTableNo==tableNo) {
-                return true
-            }
-        })
-        return false
-    }
-
     checkin() {
         let {tables, selectedIndex, modalTableNo} = this.state       
-        var found = this.checkDuplicatedTableNo(this.props.floor, selectedIndex, modalTableNo) 
-        if(!found) {
-            tables[selectedIndex].tableNo = modalTableNo
-            tables[selectedIndex].status = this.STATUS.ACTIVE
-            this.setState({
-                isModalVisible: false,
-                selectedIndex: -1,
-                selectedStatus: -1,
-                modalTableNo: ''
-            })
-            this.writeTableData(this.props.floor, selectedIndex, modalTableNo, this.STATUS.CHECKEDIN)
-        }
-        else {
-            console.log('table no found, can not write')
-        }
+        const database = firebase.database();
+        const rootRef = database.ref('/current/tables/' + this.props.floor);
+        let found = false
+        rootRef.child(selectedIndex).once('value', snapshot => {
+            var dbTableNo = snapshot.val()==null ? 0 : snapshot.val().tableNo
+            console.log(this.props.floor)
+            if (dbTableNo == modalTableNo) {
+                found = true
+            }
+
+            if (!found) {
+                tables[selectedIndex].tableNo = modalTableNo
+                tables[selectedIndex].status = this.STATUS.ACTIVE
+                this.setState({
+                    isModalVisible: false,
+                    selectedIndex: -1,
+                    selectedStatus: -1,
+                    modalTableNo: ''
+                })
+                this.writeTableData(this.props.floor, selectedIndex, modalTableNo, this.STATUS.CHECKEDIN)
+            }
+            else {
+                console.log('table no found, can not write')
+            }
+        })  
     }
 
     checkout() {
-        console.log('checked out');
+        let { tables, selectedIndex, modalTableNo } = this.state     
+        const database = firebase.database();
+        const rootRef = database.ref('/current/tables');
+        rootRef.child(this.props.floor).child(selectedIndex).set(null)
+        tables[selectedIndex].status = 1
+        tables[selectedIndex].tableNo = ''
+        this.setState({
+            tables,
+            isModalVisible: false,
+            selectedIndex: -1,
+            selectedStatus: -1,
+            modalTableNo: ''
+        })
     }
 
     renderItem = (item, index) => {
@@ -206,11 +204,11 @@ export default class CommonFloor extends Component {
                 }}>
                 <View style={[
                     {flex: 1},
-                    item.status == this.STATUS.CHECKEDIN ? { backgroundColor: 'red' } : (item.status == this.STATUS.AVAILABLE ? { backgroundColor: "green"} : { backgroundColor: "#ccc" }),
+                    item.status == this.STATUS.CHECKEDIN ? { backgroundColor: 'red' } : (item.status == this.STATUS.AVAILABLE ? { backgroundColor: "green"} : { backgroundColor: "#ddd" }),
                     {alignItems: "center"},
                     {justifyContent: "center"}
                 ]}>                    
-                    <Text style={{ textAlign: 'center', color: '#fff' }}>{item.tableNo}</Text>
+                    <Text style={{ textAlign: 'center', color: '#fff', fontSize: 18 }}>{item.tableNo}</Text>
                 </View>
             </TouchableOpacity>          
         );
