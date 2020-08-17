@@ -20,6 +20,8 @@ export default class App extends Component {
       firebase.initializeApp(firebaseConfig);
     }
 
+    this.state = { visible: false }; 
+
   }
 
   render() {
