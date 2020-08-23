@@ -11,7 +11,6 @@ import SquareGrid from "react-native-square-grid";
 import Modal from 'react-native-modal';
 import firebase from 'firebase';
 import AnimatedLoader from 'react-native-animated-loader';
-import { floor } from "react-native-reanimated";
 import moment from 'moment';
 
 export default class CommonFloor extends Component {
@@ -32,7 +31,8 @@ export default class CommonFloor extends Component {
     }
 
     TABLE_STATUS = {
-        'NOT_AVAILABLE': 2,        
+        'SERVED': 3,
+        'CHECKED_IN': 2,        
         'AVAILABLE': 1,
         'INACTIVE': 0
     }
@@ -95,7 +95,7 @@ export default class CommonFloor extends Component {
                             if(position.isCurrentPosition) {
                                 if (position.floor== this.props.floor && position.index == index) {
                                     table.tableNo = child.tableNo
-                                    table.status = this.TABLE_STATUS.NOT_AVAILABLE
+                                    table.status = child.isServed==true ? this.TABLE_STATUS.SERVED : this.TABLE_STATUS.CHECKED_IN
                                 }
                             }
                             else {
@@ -162,7 +162,7 @@ export default class CommonFloor extends Component {
                             }
                             {this.state.isShowMessage && <View><Text style={{ color: 'red', fontSize: 20, margin: 20 }}>{this.state.message}</Text></View>}
 
-                            {this.state.selectedStatus==this.TABLE_STATUS.NOT_AVAILABLE && <View>
+                            {(this.state.selectedStatus == this.TABLE_STATUS.CHECKED_IN || this.state.selectedStatus == this.TABLE_STATUS.SERVED) && <View>
                             <Text style={{marginVertical: 10, fontSize: 20}}>Thẻ bàn đang chọn: {this.state.selectedTableNo}</Text>
                                 <Button
                                     onPress={() => {
@@ -217,7 +217,7 @@ export default class CommonFloor extends Component {
 
         if (found<0) {
             tables[selectedIndex].tableNo = modalTableNo
-            tables[selectedIndex].status = this.TABLE_STATUS.NOT_AVAILABLE
+            tables[selectedIndex].status = this.TABLE_STATUS.CHECKED_IN
             this.setState({
                 isModalVisible: false,
                 selectedIndex: -1,
@@ -235,7 +235,7 @@ export default class CommonFloor extends Component {
     }
 
     async checkout() {
-        let { tables, selectedIndex, selectedTableNo } = this.state     
+        let { selectedIndex, selectedTableNo } = this.state     
         const database = firebase.database();
         const rootRef = database.ref('/current');
         await rootRef.once('value', snapshot => {
@@ -255,17 +255,12 @@ export default class CommonFloor extends Component {
         })
 
         this.setState({
-            tables,
             isModalVisible: false,
             selectedIndex: -1,
             selectedStatus: -1,
             selectedTableNo: '',
             modalTableNo: ''
         })
-    }
-
-    serve() {
-
     }
 
     renderItem = (item, index) => {
@@ -280,7 +275,7 @@ export default class CommonFloor extends Component {
                 }}>
                 <View style={[{borderRadius: 50},
                     {flex: 1},
-                    item.status == this.TABLE_STATUS.NOT_AVAILABLE? { backgroundColor: 'red' } : (item.status == this.TABLE_STATUS.AVAILABLE ? { backgroundColor: "#42692f"} : { display: "none" }),
+                    item.status == this.TABLE_STATUS.CHECKED_IN ? { backgroundColor: '#CEFA05' } : (item.status == this.TABLE_STATUS.AVAILABLE ? { backgroundColor: "#4C0013" } : (item.status == this.TABLE_STATUS.SERVED ? { backgroundColor: '#42692f'} : { display: "none" })),
                     {alignItems: "center"},
                     {justifyContent: "center"}
                 ]}>                    
