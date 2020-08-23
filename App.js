@@ -43,7 +43,7 @@ export default class App extends Component {
             options={{
               tabBarLabel: 'Pickup',
               tabBarIcon: ({ color, size }) => (
-                <MaterialCommunityIcons name="database-settings" color={color} size={size} />
+                <MaterialCommunityIcons name="transfer" color={color} size={size} />
               ),
             }}
           />

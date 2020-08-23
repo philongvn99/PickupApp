@@ -27,7 +27,7 @@ export default class CommonFloor extends Component {
             isShowMessage: false,
             message: '',
             visible: false,
-            snapshot: null
+            snapshot: null,
         }
     }
 
@@ -114,11 +114,11 @@ export default class CommonFloor extends Component {
 
     render() {
         let { visible, tables} = this.state
-        const styles = StyleSheet.create({ container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5FCFF', }, lottie: { width: 100, height: 100, }, });
+        const styles = StyleSheet.create({lottie: { width: 100, height: 100, }, });
 
         return (
             <View>
-                <View style={styles.container}>
+                <View>
                     <AnimatedLoader visible={visible} overlayColor="rgba(255,255,255,0.75)" animationStyle={styles.lottie} speed={1} />
                 </View>
 
