@@ -8,6 +8,7 @@ import Floor1Screen from './components/Floor1Screen';
 import Floor2Screen from './components/Floor2Screen'; 
 import Floor3Screen from './components/Floor3Screen'; 
 import Floor4Screen from './components/Floor4Screen'; 
+import PickupScreen from './components/PickupScreen'; 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import firebase from 'firebase';
 import { firebaseConfig} from './config/config'
@@ -15,13 +16,10 @@ import { firebaseConfig} from './config/config'
 export default class App extends Component {
   constructor(props) {
     super(props)
-  
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
-
     this.state = { visible: false }; 
-
   }
 
   render() {
@@ -34,6 +32,16 @@ export default class App extends Component {
             component={HomeScreen}
             options={{
               tabBarLabel: 'Quản lý',
+              tabBarIcon: ({ color, size }) => (
+                <MaterialCommunityIcons name="database-settings" color={color} size={size} />
+              ),
+            }}
+          />
+
+          <Tab.Screen name="Pickup"
+            component={PickupScreen}
+            options={{
+              tabBarLabel: 'Pickup',
               tabBarIcon: ({ color, size }) => (
                 <MaterialCommunityIcons name="database-settings" color={color} size={size} />
               ),

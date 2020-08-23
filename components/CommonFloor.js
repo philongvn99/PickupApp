@@ -12,6 +12,7 @@ import Modal from 'react-native-modal';
 import firebase from 'firebase';
 import AnimatedLoader from 'react-native-animated-loader';
 import { floor } from "react-native-reanimated";
+import moment from 'moment';
 
 export default class CommonFloor extends Component {
     constructor(props) {
@@ -20,17 +21,18 @@ export default class CommonFloor extends Component {
             isModalVisible: false,
             selectedIndex: -1,
             selectedStatus: -1,
+            selectedTableNo: '',
             modalTableNo: '',
             tables: [], 
-            defaultTables: [],
             isShowMessage: false,
             message: '',
-            visible: false
+            visible: false,
+            snapshot: null
         }
     }
 
-    STATUS = {
-        'CHECKEDIN': 2,
+    TABLE_STATUS = {
+        'NOT_AVAILABLE': 2,        
         'AVAILABLE': 1,
         'INACTIVE': 0
     }
@@ -38,73 +40,80 @@ export default class CommonFloor extends Component {
     componentDidMount() {
         this.setState({
             visible: true
-        })
-        let tables = []   
+        })  
         const database = firebase.database();
-        const ref = database.ref('/tables');
-        ref.child(this.props.floor).on('value', snapshot => {
+        const ref = database.ref('/config/tables');
+        ref.child(this.props.floor).once('value', snapshot => {
+            let tables = []   
             let defaultTables = snapshot.val()
             for (let i = 0; i < defaultTables.length; i++) {
                 tables.push({
                     tableNo: '',
-                    status: defaultTables[i],
-                    defaultStatus: defaultTables[i],
-                })
-            }            
-
-            this.setState({ tables, defaultTables }, () => {
-                this.readTableData(this.props.floor)
-            })    
-        })
-          
+                    status: defaultTables[i]
+                })                              
+            }                                 
+            this.setState({ tables, visible: false }, () => {
+                this.readCurrent()
+            })  
+        })                  
     }
 
-    writeTableData(floor, tableIndex, tableNo, status) {
-        const database = firebase.database();
-        const rootRef = database.ref('/current/tables');
-        rootRef.child(floor).child(tableIndex).set({
+    addCurrent(floor, tableIndex, tableNo) {
+        const database = firebase.database()
+        const rootRef = database.ref('/current')
+        rootRef.push({
             tableNo,
-            status
+            isServed: false,
+            positions: [
+                {
+                    floor: floor,
+                    index: tableIndex,
+                    checkinTime: moment().format("HH:mm:ss"),
+                    checkoutTime: null,
+                    isCurrentPosition: true
+                }
+            ],
         })
     }
 
-    readTableData(floor) {
+    readCurrent() {
         const database = firebase.database();
-        const rootRef = database.ref('/current/tables');
-        rootRef.child(floor).on('value', snapshot => {
-            this.setState({
-                data: snapshot.val()
-            }, () => {
-                this.renderTableData()
-            })
+        const rootRef = database.ref('/current');
+        rootRef.on('value', snapshot => {            
+            this.setTable(snapshot)
         })
     }
 
-    renderTableData() {             
-        let {data, tables} = this.state
-        console.log('in render table data')           
-        console.log(tables)
-        console.log(data)
-        
-        if(data && typeof data !=='undefined') {
+    setTable(snapshot) {             
+        let {tables} = this.state        
+        if (snapshot && typeof snapshot !=='undefined') {
             tables.forEach((table, index) => {
-                let t = data[index]
-                if(t && typeof t !=='undefined') {
-                    table.status = t.status,
-                    table.tableNo = t.tableNo
-                }
-                else {
-                    table.status = table.defaultStatus,
-                    table.tableNo = ''
-                }
+                if(table.status!=this.TABLE_STATUS.INACTIVE) {
+                    snapshot.forEach(childSnapshot => {
+                        let child = childSnapshot.val()
+                        child.positions.forEach(position=>{
+                            if(position.isCurrentPosition) {
+                                if (position.floor== this.props.floor && position.index == index) {
+                                    table.tableNo = child.tableNo
+                                    table.status = this.TABLE_STATUS.NOT_AVAILABLE
+                                }
+                            }
+                            else {
+                                if (position.floor == this.props.floor && position.index == index) {
+                                    table.tableNo = ''
+                                    table.status = this.TABLE_STATUS.AVAILABLE
+                                }
+                            }
+                        })                        
+                    })                          
+                }                
             })
             this.setState({tables})
         }
-        this.setState({visible: false })
     }    
 
     render() {
-        let { visible} = this.state
+        let { visible, tables} = this.state
         const styles = StyleSheet.create({ container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5FCFF', }, lottie: { width: 100, height: 100, }, });
 
         return (
@@ -114,59 +123,55 @@ export default class CommonFloor extends Component {
                 </View>
 
                 <View>
-                <SquareGrid rows={12} columns={12} items={this.state.tables} renderItem={this.renderItem} />
+                <SquareGrid rows={12} columns={12} items={tables} renderItem={this.renderItem} />
 
-                <Modal isVisible={this.state.isModalVisible}>
-                    <View style={{ flex: 1,
-                        alignItems: 'center',
-                        maxHeight: 200,
-                        justifyContent: 'center',
-                        backgroundColor: '#FFF'
-                        }}>
-                            
-                        {this.state.selectedStatus == this.STATUS.AVAILABLE && <View>
-                            <TextInput
-                                keyboardType='numeric'
-                                style={{
-                                    height: 40,
-                                    borderColor: 'gray',
-                                    borderWidth: 1,
-                                    width: 100,
-                                    marginBottom: 20,
-                                }}
-                                placeholder='Nhập thẻ bàn'
-                                onChangeText={value => this.onChangeText(value)}
-                                value={this.state.modalTableNo}
-                            />
-                        
-                            <Button
-                                onPress={() => {
-                                    this.checkin()
-                                }} title="Check in" />     
-                        </View>         
+                    <Modal isVisible={this.state.isModalVisible} 
+                        onBackdropPress={() => this.setState({ isModalVisible: false, selectedIndex: -1, selectedStatus: -1, isShowMessage: false, modalTableNo: '' })}
+                        onShow={() => { 
+                                this.state.selectedStatus == this.TABLE_STATUS.AVAILABLE && this.modalTableNo.focus(); 
+                            }
                         }
+                    >
+                        <View style={{ flex: 1,
+                            alignItems: 'center',
+                            maxHeight: 200,
+                            justifyContent: 'center',
+                            backgroundColor: '#FFF'
+                            }}>
+                                
+                            {this.state.selectedStatus == this.TABLE_STATUS.AVAILABLE && <View style={{display: 'flex', flexDirection: 'row', padding: 10, alignContent: 'center', justifyContent: 'center', alignItems: 'center'}}>
+                                <TextInput
+                                    keyboardType='numeric'
+                                    style={{
+                                        flex: 1,
+                                        borderColor: 'gray',
+                                        borderWidth: 1,
+                                        fontSize: 20
+                                    }}
+                                    ref={(input) => { this.modalTableNo = input; }}
+                                    placeholder='Nhập thẻ bàn'
+                                    onChangeText={value => this.onChangeText(value)}
+                                    value={this.state.modalTableNo}
+                                />
+                            
+                                <Button style={{flex: 1}}
+                                    onPress={() => {
+                                        this.checkin()
+                                    }} title="Check in" />     
+                            </View>         
+                            }
+                            {this.state.isShowMessage && <View><Text style={{ color: 'red', fontSize: 20, margin: 20 }}>{this.state.message}</Text></View>}
 
-                        {this.state.selectedStatus==this.STATUS.CHECKEDIN && 
-                            <Button
-                                onPress={() => {
-                                    this.checkout()
-                                }} title="Check out" />     
-                            }  
-                        <View style={{height: 10}}>
-
-                        </View>
-                        <Button
-                            onPress={() => {
-                                this.setState({
-                                    isShowMessage: false,
-                                    message: '',
-                                    isModalVisible: false
-                                })
-                            }} title="Đóng" />  
-
-                        {this.state.isShowMessage && <Text style={{color: 'red', fontSize: 18, marginTop: 10}}>{this.state.message}</Text>}
-                    </View>
-                </Modal>
+                            {this.state.selectedStatus==this.TABLE_STATUS.NOT_AVAILABLE && <View>
+                            <Text style={{marginVertical: 10, fontSize: 20}}>Thẻ bàn đang chọn: {this.state.selectedTableNo}</Text>
+                                <Button
+                                    onPress={() => {
+                                        this.checkout()
+                                    }} title="Check out" />     
+                                    </View>
+                                }                          
+                        </View>                   
+                    </Modal>
                 </View>
             </View>
         );
@@ -179,7 +184,7 @@ export default class CommonFloor extends Component {
     }
 
     showModal = (status) => {
-        if(status!=this.STATUS.INACTIVE) {
+        if(status!=this.TABLE_STATUS.INACTIVE) {
             this.setState({
                 isModalVisible: true
             })
@@ -188,65 +193,79 @@ export default class CommonFloor extends Component {
 
     async checkDuplicatedTableNo() {
         let { modalTableNo } = this.state 
-
         const database = firebase.database();
-        const rootRef = database.ref('/current/tables');
-
-        let result = false
-        
+        const rootRef = database.ref('/current');
+        let result = -1
         await rootRef.once('value', snapshot => {
-            let floors = snapshot.val()
-            if(floors && Array.isArray(floors) && floors.length>0) {
-                floors.forEach(floor => {
-                    Object.values(floor).forEach(table => {                
-                        if (modalTableNo.trim() == table.tableNo.trim()) {
-                            result = true
+            snapshot.forEach(childSnapshot => {                
+                let child = childSnapshot.val()
+                if(!child.isServed && child.tableNo==modalTableNo) {
+                    child.positions.forEach(position => {
+                        if(position.isCurrentPosition) {
+                            result = position.floor
                         }
                     })
-                })
-            }
+                }
+            })
         })
-
         return result
     }
 
     async checkin() {
         let {tables, selectedIndex, modalTableNo} = this.state       
         let found = await this.checkDuplicatedTableNo()
-        console.log('here ',found)
-        if (!found) {
+
+        if (found<0) {
             tables[selectedIndex].tableNo = modalTableNo
-            tables[selectedIndex].status = this.STATUS.ACTIVE
+            tables[selectedIndex].status = this.TABLE_STATUS.NOT_AVAILABLE
             this.setState({
                 isModalVisible: false,
                 selectedIndex: -1,
                 selectedStatus: -1,
                 modalTableNo: ''
             })
-            this.writeTableData(this.props.floor, selectedIndex, modalTableNo, this.STATUS.CHECKEDIN)
+            this.addCurrent(this.props.floor, selectedIndex, modalTableNo)
         }
         else {
             this.setState({
                 isShowMessage: true,
-                message: 'Thẻ bàn đã sử dụng.'
+                message: 'Thẻ bàn đang sử dụng ở tầng ' + parseInt(found+1)
             })
         }
     }
 
-    checkout() {
-        let { tables, selectedIndex, modalTableNo } = this.state     
+    async checkout() {
+        let { tables, selectedIndex, selectedTableNo } = this.state     
         const database = firebase.database();
-        const rootRef = database.ref('/current/tables');
-        rootRef.child(this.props.floor).child(selectedIndex).remove()
-        tables[selectedIndex].status = 1
-        tables[selectedIndex].tableNo = ''
+        const rootRef = database.ref('/current');
+        await rootRef.once('value', snapshot => {
+            snapshot.forEach(childSnapshot => {
+                let child = childSnapshot.val()
+                if (child.tableNo == selectedTableNo) {
+                    child.positions.forEach((position, i) => {
+                        if (position.floor==this.props.floor && position.index==selectedIndex && position.isCurrentPosition) {
+                            database.ref('/current/' + childSnapshot.key + '/positions/' + i).update({
+                                isCurrentPosition: false,
+                                checkoutTime: moment().format("HH:mm:ss")
+                            }) 
+                        }
+                    })
+                }
+            })
+        })
+
         this.setState({
             tables,
             isModalVisible: false,
             selectedIndex: -1,
             selectedStatus: -1,
+            selectedTableNo: '',
             modalTableNo: ''
         })
+    }
+
+    serve() {
+
     }
 
     renderItem = (item, index) => {
@@ -255,13 +274,13 @@ export default class CommonFloor extends Component {
                 flex: 1,
                 alignSelf: "stretch",
                 padding: 5
-                }} onPress={() => {
+                }} onPress={() => {                    
                     this.showModal(item.status)
-                    this.setState({selectedIndex: index, selectedStatus: item.status})
+                    this.setState({selectedIndex: index, selectedStatus: item.status, selectedTableNo: item.tableNo})
                 }}>
                 <View style={[{borderRadius: 50},
                     {flex: 1},
-                    item.status == this.STATUS.CHECKEDIN ? { backgroundColor: 'red' } : (item.status == this.STATUS.AVAILABLE ? { backgroundColor: "#42692f"} : { display: "none" }),
+                    item.status == this.TABLE_STATUS.NOT_AVAILABLE? { backgroundColor: 'red' } : (item.status == this.TABLE_STATUS.AVAILABLE ? { backgroundColor: "#42692f"} : { display: "none" }),
                     {alignItems: "center"},
                     {justifyContent: "center"}
                 ]}>                    
