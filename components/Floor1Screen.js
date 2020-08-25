@@ -9,7 +9,7 @@ export default class Floor1Screen extends Component {
         return (
             <View style={styles.wrapper}>                
                 <ImageBackground source={require("../assets/images/tang1.png")} imageStyle=
-                    {{ opacity: 0.3 }} style={styles.image}>
+                    {{ opacity: 1 }} style={styles.image}>
                     <View style={{justifyContent: 'center', alignItems: 'center'}}>
                         <CommonFloor floor={0} />
                     </View>
@@ -25,7 +25,8 @@ const styles = StyleSheet.create({
     },
     image: {
         flex: 1,
-        height: APP_SCREEN_HEIGHT
+        height: APP_SCREEN_HEIGHT,
+        resizeMode: 'cover', // or 'stretch'
     },
     text: {
         color: "red",

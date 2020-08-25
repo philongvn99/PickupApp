@@ -275,7 +275,7 @@ export default class CommonFloor extends Component {
                 }}>
                 <View style={[{borderRadius: 50},
                     {flex: 1},
-                    item.status == this.TABLE_STATUS.CHECKED_IN ? { backgroundColor: '#CEFA05' } : (item.status == this.TABLE_STATUS.AVAILABLE ? { backgroundColor: "#4C0013" } : (item.status == this.TABLE_STATUS.SERVED ? { backgroundColor: '#42692f'} : { display: "none" })),
+                    item.status == this.TABLE_STATUS.CHECKED_IN ? { backgroundColor: 'blue' } : (item.status == this.TABLE_STATUS.AVAILABLE ? { backgroundColor: "#4C0013" } : (item.status == this.TABLE_STATUS.SERVED ? { backgroundColor: '#42692f'} : { display: "none" })),
                     {alignItems: "center"},
                     {justifyContent: "center"}
                 ]}>                    

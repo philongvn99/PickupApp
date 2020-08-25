@@ -165,7 +165,7 @@ export default class PickupScreen extends Component {
                     }}>
                         <View style={[{ borderRadius: 50 },
                         { flex: 1 },
-                        { backgroundColor: '#CEFA05', color: '#000'},
+                        { backgroundColor: 'blue', color: '#000'},
                         { alignItems: "center" },
                         { justifyContent: "center" }
                         ]}>

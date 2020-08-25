@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     },
     image: {
         flex: 1,
-        height: APP_SCREEN_HEIGHT
+        resizeMode: 'cover', // or 'stretch'
     },
     text: {
         color: "red",
