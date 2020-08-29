@@ -32,9 +32,9 @@ export default class CommonFloor extends Component {
 
     TABLE_STATUS = {
         'SERVED': 3,
-        'CHECKED_IN': 2,        
-        'AVAILABLE': 1,
-        'INACTIVE': 0
+        'ON_SERVING': 2,
+        'CHECKED_IN': 1,        
+        'AVAILABLE': 0,        
     }
 
     componentDidMount() {
@@ -44,24 +44,25 @@ export default class CommonFloor extends Component {
         const database = firebase.database();
         const ref = database.ref('/config/tables');
         ref.child(this.props.floor).once('value', snapshot => {
-            let tables = []   
-            let defaultTables = snapshot.val()
-            for (let i = 0; i < defaultTables.length; i++) {
-                tables.push({
-                    tableNo: '',
-                    status: defaultTables[i]
-                })                              
-            }                                 
-            this.setState({ tables, visible: false }, () => {
-                this.readCurrent()
-            })  
+            // let tables = []   
+            // let defaultTables = snapshot.val()
+            // for (let i = 0; i < defaultTables.length; i++) {
+            //     tables.push({
+            //         tableNo: '',
+            //         status: defaultTables[i]
+            //     })                              
+            // }                                 
+            // this.setState({ tables, visible: false }, () => {
+            //     this.readCurrent()
+            // })  
+            console.log(snapshot.val())
         })                  
     }
 
     addCurrent(floor, tableIndex, tableNo) {
         const database = firebase.database()
         const rootRef = database.ref('/current')
-        rootRef.push({
+        rootRef.set({
             tableNo,
             isServed: false,
             positions: [
@@ -122,8 +123,7 @@ export default class CommonFloor extends Component {
                     <AnimatedLoader visible={visible} overlayColor="rgba(255,255,255,0.75)" animationStyle={styles.lottie} speed={1} />
                 </View>
 
-                <View>
-                <SquareGrid rows={12} columns={12} items={tables} renderItem={this.renderItem} />
+                <View>                
 
                     <Modal isVisible={this.state.isModalVisible} 
                         onBackdropPress={() => this.setState({ isModalVisible: false, selectedIndex: -1, selectedStatus: -1, isShowMessage: false, modalTableNo: '' })}
