@@ -19,12 +19,12 @@ export default class PickupScreen extends Component {
             message: '',
             visible: false,
             snapshot: null,
-            floorItems: [
-                [],
-                [],
-                [],
-                []
-            ]
+            floorItems: {
+                'floor-1' : [],
+                'floor-2': [],
+                'floor-3': [],
+                'floor-4': []
+            }
         }
     }
 
@@ -38,17 +38,20 @@ export default class PickupScreen extends Component {
         const ref = database.ref('/current');
 
         ref.on('value', snapshot => {           
-            floorItems = [
-                [],
-                [],
-                [],
-                []
-            ]
+            floorItems = {
+                'floor-1' : [],
+                'floor-2': [],
+                'floor-3': [],
+                'floor-4': []
+            }
             snapshot.forEach(childSnapshot=>{                
                 let child = childSnapshot.val()
-                if (!child.isServed) {                    
-                    child.positions.forEach(position=>{
-                        if(position.isCurrentPosition) {
+                let keys = child.positions != null ? Object.keys(child.positions) : []
+
+                if (!child.isServed && !child.isPickedUp) {                    
+                    keys.forEach(key => {
+                        let position = child.positions[key]
+                        if (position.isCurrentPosition) {
                             floorItems[position.floor].push({
                                 index: position.index,
                                 tableNo: child.tableNo
@@ -97,8 +100,8 @@ export default class PickupScreen extends Component {
                             <Text style={{ marginVertical: 10, fontSize: 20 }}>Thẻ bàn đang chọn: {selectedTableNo}</Text>
                             <Button
                                 onPress={() => {
-                                    this.serve()
-                                }} title="Giao Nước" />
+                                    this.pickup()
+                                }} title="Pick up" />
                         </View>                       
                     </View>
                 </Modal>
@@ -106,19 +109,23 @@ export default class PickupScreen extends Component {
         );
     }
 
-    async serve() {
+    async pickup() {
         let {selectedFloor, selectedIndex, selectedTableNo} = this.state
+        let floor = 'floor-' + selectedFloor
         const database = firebase.database();
         const rootRef = database.ref('/current');
         await rootRef.once('value', snapshot => {
             snapshot.forEach(childSnapshot => {
                 let child = childSnapshot.val()
                 if (child.tableNo == selectedTableNo) {
-                    child.positions.forEach((position, i) => {
-                        if (position.floor == selectedFloor && position.index == selectedIndex && position.isCurrentPosition) {
+                    let keys = child.positions != null ? Object.keys(child.positions) : []
+
+                    keys.forEach(key => {
+                        let position = child.positions[key]
+                        if (position.floor == floor && position.index == selectedIndex && position.isCurrentPosition) {
                             database.ref('/current/' + childSnapshot.key).update({
-                                isServed: true,
-                                servedTime: moment().format("HH:mm:ss")
+                                isPickedUp: true,
+                                pickedUpTime: moment().format("HH:mm:ss")
                             })
                         }
                     })
@@ -142,8 +149,8 @@ export default class PickupScreen extends Component {
                 <View style={[{ flex: 1.5, backgroundColor: '#ddd' }, this.styles.sectionHeader]}>
                     <Text>Tầng {parseInt(floor+1)}</Text>
                 </View>    
-                <View style={{ flex: 8.5, flexDirection: 'row' }}>
-                    {this.renderFloorItems(floor)}
+                <View style={{ flex: 8.5, flexDirection: 'row', flexWrap: 'wrap' }}>
+                    {this.renderFloorItems(parseInt(floor + 1))}
                 </View>
             </View>            
         )
@@ -151,19 +158,20 @@ export default class PickupScreen extends Component {
 
     renderFloorItems(floor) {
         let {floorItems} = this.state
-        let currentFloorItems = floorItems[floor]
+        let currentFloorItems = floorItems['floor-' + floor]
+        console.log(floor)
         return(
             currentFloorItems.map(item => {
                 return (
                     <TouchableOpacity style={{
-                        width: 40,
-                        height: 40,
-                        padding: 5
+                        width: 60,
+                        height: 60,
+                        padding: 10
                     }} onPress={() => {
                         this.showModal()
                         this.setState({ selectedIndex: item.index, selectedTableNo: item.tableNo, selectedFloor: floor })
                     }}>
-                        <View style={[{ borderRadius: 50 },
+                        <View style={[{ borderRadius: 60 },
                         { flex: 1 },
                         { backgroundColor: 'blue', color: '#000'},
                         { alignItems: "center" },

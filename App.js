@@ -101,7 +101,7 @@ export default class App extends Component {
     return (
       <NavigationContainer>
         <Tab.Navigator>
-          <Tab.Screen name="Home"
+          {/* <Tab.Screen name="Home"
             component={HomeScreen}
             options={{
               tabBarLabel: 'Quản lý',
@@ -109,7 +109,7 @@ export default class App extends Component {
                 <MaterialCommunityIcons name="database-settings" color={color} size={size} />
               ),
             }}
-          />
+          /> */}
 
           <Tab.Screen name="Pickup"
             component={PickupScreen}

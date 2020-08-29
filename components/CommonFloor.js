@@ -35,10 +35,10 @@ export default class CommonFloor extends Component {
     }
 
     TABLE_STATUS = {
-        'SERVED': 3,
-        'ON_SERVING': 2,
-        'CHECKED_IN': 1,        
         'AVAILABLE': 0,        
+        'CHECKED_IN': 1,
+        'PICKED_UP': 2,
+        "SERVED": 3
     }
 
     APP_SCREEN_HEIGHT = Dimensions.get('window').height
@@ -75,21 +75,23 @@ export default class CommonFloor extends Component {
     }
 
     addCurrent(floor, tableIndex, tableNo) {
+        console.log('in add current')
         const database = firebase.database()
         const rootRef = database.ref('/current')
-        rootRef.set({
+        const pushedPostRef = rootRef.push({
             tableNo,
-            isServed: false,
-            positions: [
-                {
-                    floor: floor,
-                    index: tableIndex,
-                    checkinTime: moment().format("HH:mm:ss"),
-                    checkoutTime: null,
-                    isCurrentPosition: true
-                }
-            ],
+            isServed: false            
         })
+        const newId = pushedPostRef.getKey();
+        rootRef.child(newId + '/positions').push(
+            {
+                floor: floor,
+                index: tableIndex,
+                checkinTime: moment().format("HH:mm:ss"),
+                checkoutTime: null,
+                isCurrentPosition: true
+            }
+        )
     }
 
     readCurrent() {
@@ -102,9 +104,47 @@ export default class CommonFloor extends Component {
 
     setTable(snapshot) {             
         let {tables} = this.state        
+
         if (snapshot && typeof snapshot !=='undefined') {
+            tables.forEach(table => {
+                snapshot.forEach(childSnapshot => {
+                    let child = childSnapshot.val()
+                    let keys = child.positions!=null ? Object.keys(child.positions) : []
+                    keys.forEach(key => {
+                        let position = child.positions[key]
+                        if (position.isCurrentPosition) {
+                            if (position.floor == this.props.floor && position.index == table.id) {
+                                table.tableNo = child.tableNo                                
+                                if(child.isServed) {                                    
+                                    table.prefill = 'green'
+                                    table.status = this.TABLE_STATUS.SERVED
+                                }
+                                else if(child.isPickedUp) {                                    
+                                    table.prefill = 'orange'
+                                    table.status = this.TABLE_STATUS.PICKED_UP
+                                }
+                                else {                                    
+                                    table.prefill = 'red'
+                                    table.status = this.TABLE_STATUS.CHECKED_IN
+                                }
+                            }
+                        }
+                        else {
+                            if (position.floor == this.props.floor && position.index == table.id) {
+                                table.tableNo = ''
+                                table.prefill = 'gray'
+                                table.status = this.TABLE_STATUS.AVAILABLE                                
+                            }
+                        }
+                    })
+                })                
+            })
+
             this.setState({tables})
         }
+        // else {
+        //     this.setState({tables: []})
+        // }
     }    
 
     mapperAreaClickHandler(item, idx, event) {
@@ -115,7 +155,6 @@ export default class CommonFloor extends Component {
     render() {
         let { visible, tables} = this.state
         const styles = StyleSheet.create({lottie: { width: 100, height: 100, }, });
-
         return (
             <View>
                 <View>
@@ -126,7 +165,7 @@ export default class CommonFloor extends Component {
                     <ImageMapper
                         imgHeight={this.APP_SCREEN_HEIGHT}
                         imgWidth={this.APP_SCREEN_WIDTH}
-                        imgSource={require("../assets/images/tang1.png")}
+                        imgSource={this.props.floor == 'floor-1' ? require("../assets/images/floor-1.png") : (this.props.floor == 'floor-2' ? require("../assets/images/floor-2.png") : (this.props.floor == 'floor-3' ? require("../assets/images/floor-3.png") : require("../assets/images/floor-4.png")))}
                         imgMap={tables}
                         onPress={(item, idx, event) => this.mapperAreaClickHandler(item, idx, event)}
                         containerStyle={{ top: 0 }}
@@ -150,6 +189,7 @@ export default class CommonFloor extends Component {
                                 
                             {this.state.selectedStatus == this.TABLE_STATUS.AVAILABLE && <View style={{display: 'flex', flexDirection: 'row', padding: 10, alignContent: 'center', justifyContent: 'center', alignItems: 'center'}}>
                                 <TextInput
+                                    onSubmitEditing={() => this.checkin()}
                                     keyboardType='numeric'
                                     style={{
                                         flex: 1,
@@ -171,20 +211,64 @@ export default class CommonFloor extends Component {
                             }
                             {this.state.isShowMessage && <View><Text style={{ color: 'red', fontSize: 20, margin: 20 }}>{this.state.message}</Text></View>}
 
-                            {(this.state.selectedStatus == this.TABLE_STATUS.CHECKED_IN || this.state.selectedStatus == this.TABLE_STATUS.SERVED) && <View>
+                            {(this.state.selectedStatus == this.TABLE_STATUS.CHECKED_IN || this.state.selectedStatus == this.TABLE_STATUS.SERVED ) && <View>
                             <Text style={{marginVertical: 10, fontSize: 20}}>Thẻ bàn đang chọn: {this.state.selectedTableNo}</Text>
                                 <Button
                                     onPress={() => {
                                         this.checkout()
                                     }} title="Check out" />     
-                                    </View>
-                                }                          
+                                </View>
+                            }      
+
+                            {(this.state.selectedStatus == this.TABLE_STATUS.PICKED_UP) && <View>
+                                <Text style={{ marginVertical: 10, fontSize: 20 }}>Thẻ bàn đang chọn: {this.state.selectedTableNo}</Text>
+                                <View style={{marginBottom: 20}}>
+                                    <Button
+                                        onPress={() => {
+                                            this.serve()
+                                        }} title="Phục vụ nước" />
+                                </View>
+                                <View>
+                                    <Button
+                                        onPress={() => {
+                                            this.checkout()
+                                        }} title="Check out" />
+                                </View>                                                
+                            </View>
+                            }                                                                                     
                         </View>                   
                     </Modal>
                 </View>
             </View>
         );
     }
+
+    async serve() {
+        let { selectedIndex, selectedTableNo } = this.state
+        const database = firebase.database();
+        const rootRef = database.ref('/current');
+        await rootRef.once('value', snapshot => {
+            snapshot.forEach(childSnapshot => {
+                let child = childSnapshot.val()
+                if (child.tableNo == selectedTableNo) {
+                    database.ref('/current/' + childSnapshot.key).update({
+                        isServed: true,
+                        isPickedUp: false,
+                        servedTime: moment().format("HH:mm:ss")
+                    })
+                }
+            })
+        })
+
+        this.setState({
+            isModalVisible: false,
+            selectedIndex: -1,
+            selectedStatus: -1,
+            selectedTableNo: '',
+            modalTableNo: ''
+        })
+    }
+    
 
     onChangeText(text) {
         this.setState({
@@ -207,11 +291,13 @@ export default class CommonFloor extends Component {
             snapshot.forEach(childSnapshot => {                
                 let child = childSnapshot.val()
                 if(!child.isServed && child.tableNo==modalTableNo) {
-                    child.positions.forEach(position => {
-                        if(position.isCurrentPosition) {
-                            result = position.floor
+                    let keys = child.positions != null ? Object.keys(child.positions) : []
+                    keys.forEach(key => {
+                        let position = child.positions[key]
+                        if (position.isCurrentPosition) {
+                            result = position.floor.replace('floor-', '')
                         }
-                    })
+                    })                    
                 }
             })
         })
@@ -219,14 +305,10 @@ export default class CommonFloor extends Component {
     }
 
     async checkin() {
+        console.log('in checkin()')
         let {tables, selectedIndex, modalTableNo} = this.state             
-        //let found = await this.checkDuplicatedTableNo()
-        found = -1
-
-        if (found<0) {
-            tables[selectedIndex].tableNo = modalTableNo
-            tables[selectedIndex].status = this.TABLE_STATUS.CHECKED_IN
-            tables[selectedIndex].prefill = 'red'
+        let found = await this.checkDuplicatedTableNo()        
+        if (found<=0) {            
             this.setState({
                 isModalVisible: false,
                 selectedIndex: -1,
@@ -238,7 +320,7 @@ export default class CommonFloor extends Component {
         else {
             this.setState({
                 isShowMessage: true,
-                message: 'Thẻ bàn đang sử dụng ở tầng ' + parseInt(found+1)
+                message: 'Thẻ bàn đang sử dụng ở tầng ' + found
             })
         }
     }
@@ -251,14 +333,16 @@ export default class CommonFloor extends Component {
             snapshot.forEach(childSnapshot => {
                 let child = childSnapshot.val()
                 if (child.tableNo == selectedTableNo) {
-                    child.positions.forEach((position, i) => {
-                        if (position.floor==this.props.floor && position.index==selectedIndex && position.isCurrentPosition) {
-                            database.ref('/current/' + childSnapshot.key + '/positions/' + i).update({
+                    let keys = child.positions != null ? Object.keys(child.positions) : []
+                    keys.forEach(key => {
+                        let position = child.positions[key]
+                        if (position.floor == this.props.floor && position.index == selectedIndex && position.isCurrentPosition) {
+                            database.ref('/current/' + childSnapshot.key + '/positions/' + key).update({
                                 isCurrentPosition: false,
                                 checkoutTime: moment().format("HH:mm:ss")
-                            }) 
+                            })
                         }
-                    })
+                    })                    
                 }
             })
         })
