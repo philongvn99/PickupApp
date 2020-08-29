@@ -1,17 +1,21 @@
-import React, { Component, useState } from "react";
+import React, { Component } from "react";
 import {
     View,
     StyleSheet,
     Text,
     TouchableOpacity,
     Button,
-    TextInput 
+    TextInput,
+    Dimensions
 } from "react-native";
 import SquareGrid from "react-native-square-grid";
 import Modal from 'react-native-modal';
 import firebase from 'firebase';
 import AnimatedLoader from 'react-native-animated-loader';
 import moment from 'moment';
+import ImageMapper from 'react-native-image-mapper';
+
+
 
 export default class CommonFloor extends Component {
     constructor(props) {
@@ -37,6 +41,9 @@ export default class CommonFloor extends Component {
         'AVAILABLE': 0,        
     }
 
+    APP_SCREEN_HEIGHT = Dimensions.get('window').height
+    APP_SCREEN_WIDTH = Dimensions.get('window').width
+
     componentDidMount() {
         this.setState({
             visible: true
@@ -44,18 +51,26 @@ export default class CommonFloor extends Component {
         const database = firebase.database();
         const ref = database.ref('/config/tables');
         ref.child(this.props.floor).once('value', snapshot => {
-            // let tables = []   
-            // let defaultTables = snapshot.val()
-            // for (let i = 0; i < defaultTables.length; i++) {
-            //     tables.push({
-            //         tableNo: '',
-            //         status: defaultTables[i]
-            //     })                              
-            // }                                 
-            // this.setState({ tables, visible: false }, () => {
-            //     this.readCurrent()
-            // })  
-            console.log(snapshot.val())
+            let tables = []   
+            snapshot.forEach(t=>{
+                let table = t.val() 
+                tables.push({
+                    tableNo: '',
+                    status: this.TABLE_STATUS.AVAILABLE,
+                    id: table.id,
+                    radius: table.radius,
+                    shape: table.shape,
+                    fill: table.fill,
+                    prefill: table.prefill,
+                    x1: table.x1,
+                    y1: table.y1
+                })                              
+            })
+                                                               
+            this.setState({ tables, visible: false }, () => {
+                this.readCurrent()
+            })  
+            
         })                  
     }
 
@@ -88,30 +103,14 @@ export default class CommonFloor extends Component {
     setTable(snapshot) {             
         let {tables} = this.state        
         if (snapshot && typeof snapshot !=='undefined') {
-            tables.forEach((table, index) => {
-                if(table.status!=this.TABLE_STATUS.INACTIVE) {
-                    snapshot.forEach(childSnapshot => {
-                        let child = childSnapshot.val()
-                        child.positions.forEach(position=>{
-                            if(position.isCurrentPosition) {
-                                if (position.floor== this.props.floor && position.index == index) {
-                                    table.tableNo = child.tableNo
-                                    table.status = child.isServed==true ? this.TABLE_STATUS.SERVED : this.TABLE_STATUS.CHECKED_IN
-                                }
-                            }
-                            else {
-                                if (position.floor == this.props.floor && position.index == index) {
-                                    table.tableNo = ''
-                                    table.status = this.TABLE_STATUS.AVAILABLE
-                                }
-                            }
-                        })                        
-                    })                          
-                }                
-            })
             this.setState({tables})
         }
     }    
+
+    mapperAreaClickHandler(item, idx, event) {
+        this.showModal(item.status)
+        this.setState({ selectedIndex: item.id, selectedStatus: item.status, selectedTableNo: item.tableNo })
+    };
 
     render() {
         let { visible, tables} = this.state
@@ -123,8 +122,18 @@ export default class CommonFloor extends Component {
                     <AnimatedLoader visible={visible} overlayColor="rgba(255,255,255,0.75)" animationStyle={styles.lottie} speed={1} />
                 </View>
 
-                <View>                
+                <View style={{ flex: 1, alignItems: 'center', padding: 0 }}>
+                    <ImageMapper
+                        imgHeight={this.APP_SCREEN_HEIGHT}
+                        imgWidth={this.APP_SCREEN_WIDTH}
+                        imgSource={require("../assets/images/tang1.png")}
+                        imgMap={tables}
+                        onPress={(item, idx, event) => this.mapperAreaClickHandler(item, idx, event)}
+                        containerStyle={{ top: 0 }}
+                    />
+                </View>
 
+                <View>                
                     <Modal isVisible={this.state.isModalVisible} 
                         onBackdropPress={() => this.setState({ isModalVisible: false, selectedIndex: -1, selectedStatus: -1, isShowMessage: false, modalTableNo: '' })}
                         onShow={() => { 
@@ -184,11 +193,9 @@ export default class CommonFloor extends Component {
     }
 
     showModal = (status) => {
-        if(status!=this.TABLE_STATUS.INACTIVE) {
-            this.setState({
-                isModalVisible: true
-            })
-        }        
+        this.setState({
+            isModalVisible: true
+        })           
     }
 
     async checkDuplicatedTableNo() {
@@ -212,12 +219,14 @@ export default class CommonFloor extends Component {
     }
 
     async checkin() {
-        let {tables, selectedIndex, modalTableNo} = this.state       
-        let found = await this.checkDuplicatedTableNo()
+        let {tables, selectedIndex, modalTableNo} = this.state             
+        //let found = await this.checkDuplicatedTableNo()
+        found = -1
 
         if (found<0) {
             tables[selectedIndex].tableNo = modalTableNo
             tables[selectedIndex].status = this.TABLE_STATUS.CHECKED_IN
+            tables[selectedIndex].prefill = 'red'
             this.setState({
                 isModalVisible: false,
                 selectedIndex: -1,
