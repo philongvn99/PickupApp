@@ -16,7 +16,8 @@ import firebase from 'firebase';
 import QRCodeScanner from 'react-native-qrcode-scanner';
 import {RNCamera} from 'react-native-camera';
 import axios from 'axios';
-import PopUp from './PopUp';
+//import PopUp from './PopUp';
+import DialogInput from 'react-native-dialog-input'
 export default class ScanScreen extends Component {
   constructor(props) {
     super(props);
@@ -77,7 +78,7 @@ export default class ScanScreen extends Component {
         markerStyle={{borderColor: '#FFF', borderRadius: 10}}
         topContent={
           <TouchableOpacity style={styles.buttonTouchable}>
-              <PopUp
+              <DialogInput
                 isDialogVisible={this.state.isDialogVisible}
                 title={this.state.peron}
                 message={'Số lượng'}
