@@ -17,13 +17,13 @@ import QRCodeScanner from 'react-native-qrcode-scanner';
 import {RNCamera} from 'react-native-camera';
 import axios from 'axios';
 //import PopUp from './PopUp';
-import DialogInput from 'react-native-dialog-input'
+import PopUp from './PopUp.js'
 export default class ScanScreen extends Component {
   constructor(props) {
     super(props);
     this.state = {
       productCode: undefined,
-      peron: 'HI',
+      itemBarcode: 'HI',
       isDialogVisible: false,
     };
     this.databaseRef = firebase.database().ref('FilongCode');
@@ -44,19 +44,30 @@ export default class ScanScreen extends Component {
             this.setState({
               productCode: e.data,
               isDialogVisible: true,
-              peron: response.data.data.itemBarCode,
+              itemBarcode: response.data.data.itemBarCode,
             });
           })
         .catch((error) => {console.log(error); });
       });
     }
 
-  postData = (selection) =>
+  postData = (inputQC, quantity) =>
     {
-      let data = {};
-      axios.post('https://eco-giong.azurewebsites.net/api/GoodsReceived', data)
+      let data = {
+        itemBarcode: this.state.itemBarcode,
+        warehouseId:  2,
+        uomId: inputQC,
+        quantity: parseInt(quantity)
+      };
+      console.log(data)
+      axios.post('https://eco-giong.azurewebsites.net/api/stocktake', data)
       .then(function (response) {
-         console.log(response.data);
+         let returndata = response.data.data
+         console.log(returndata);
+         alert('MESSAGE: ' + returndata.message
+          + '\nBarcode: ' + returndata.itemBarCode
+          + '\nQuantity: '+ returndata.quantity
+          + '\nwarehouseID: ' + returndata.warehouseId);
       })
       .catch(function (error) {
         console.log(error);
@@ -78,11 +89,10 @@ export default class ScanScreen extends Component {
         markerStyle={{borderColor: '#FFF', borderRadius: 10}}
         topContent={
           <TouchableOpacity style={styles.buttonTouchable}>
-              <DialogInput
+              <PopUp
                 isDialogVisible={this.state.isDialogVisible}
-                title={this.state.peron}
-                message={'Số lượng'}
-                hintInput ={'0'}
+                title={this.state.itemBarcode}
+                hintInput ={'Number Only'}
                 submitInput={
                   (selection, inputText) => {this.postData(selection, inputText);}
                 }

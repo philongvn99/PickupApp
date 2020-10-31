@@ -1,6 +1,3 @@
-/* eslint-disable prettier/prettier */
-/* eslint-disable react-native/no-inline-styles */
-/* eslint-disable prettier/prettier */
 import React, { PureComponent } from 'react';
 import {
   Modal,
@@ -10,95 +7,94 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Picker
 } from 'react-native';
-import PropTypes from 'prop-types';
-import RNPickerSelect from 'react-native-picker-select';
 
 export default class PopUp extends PureComponent{
-  static propTypes = {
-    title: PropTypes.string,
-    message1: PropTypes.string,
-    message2: PropTypes.string,
-    hintInput1: PropTypes.string,
-    hintInput2: PropTypes.string,
-    submitInput: PropTypes.func,
-    closeDialog: PropTypes.func,
-  }
-
   constructor(props){
     super(props);
-    this.state = {
-      inputModal1: props.initValueTextInput,
-      inputQC: props.initValueTextInput,
+    this.state = { 
+      inputQC: 0,
+      quantity: 0,
       openning: true };
   }
 
   handleOnRequestClose = () => {
-    this.props.closeDialog;
-    this.setState({ inputModal: '' });
+    this.props.closeDialog();
+    this.setState({inputQC: 0, quantity: 0, user: '' });
   };
 
   handleOnKeyPress = () => {
     this.setState({ openning: false });
   };
 
-  handleOnChangeText = (inputModal) => {
-    this.setState({ inputModal, openning: false });
+  handleOnChangeText = (quantity) => {
+    this.setState({ quantity: quantity, openning: false });
   };
 
   handleOnCloseDialog = () => {
     this.props.closeDialog();
-    this.setState({ inputModal: '',openning: true });
+    this.setState({inputQC: 0, quantity: 0, openning: true });
   };
 
   handleSubmit = () => {
-    this.props.submitInput(this.state.inputModal1, this.state.inputQC);
-    this.setState({ inputModal: '',openning: true });
+    this.props.submitInput(this.state.inputQC, this.state.quantity);
+    this.setState({inputQC: 0, quantity: 0, openning: true });
   };
+
+  updateQC = (user) => {
+    console.log(user);
+    this.setState({ user: user })
+ }
 
   render(){
     const title = this.props.title || '';
     const hintInput = this.props.hintInput || '';
     let value = '';
     if (!this.state.openning) {
-      value = this.state.inputModal;
-    } else {
+      value = this.state.quantity;
+    }else{
       value = this.props.initValueTextInput ? this.props.initValueTextInput : '';
     }
 
+    const textProps = this.props.textInputProps || null;
     const modalStyleProps = this.props.modalStyle || {};
     const dialogStyleProps = this.props.dialogStyle || {};
-    const placeholderTextColor = this.props.placeholderTextColor;
+    const placeholderTextColor = this.props.placeholderTextColor
     const animationType = this.props.animationType || 'fade';
     let cancelText = this.props.cancelText || 'Cancel';
     let submitText = this.props.submitText || 'Submit';
-    cancelText = (Platform.OS === 'ios') ? cancelText : cancelText.toUpperCase();
-    submitText = (Platform.OS === 'ios') ? submitText : submitText.toUpperCase();
+    cancelText = (Platform.OS === 'ios')? cancelText:cancelText.toUpperCase();
+    submitText = (Platform.OS === 'ios')? submitText:submitText.toUpperCase();
 
-    return (
+    return(
       <Modal
         animationType={animationType}
         transparent={true}
         visible={this.props.isDialogVisible}
-        onRequestClose={this.handleOnRequestClose}>
+      	onRequestClose={this.handleOnRequestClose}>
         <View style={[styles.container, {...modalStyleProps}]}  >
           <TouchableOpacity style={styles.container} activeOpacity={1} onPress={this.handleOnCloseDialog}>
-          <RNPickerSelect
-                    onValueChange={indexQC => this.setState({inputQC: indexQC})}
-                    items={[
-                        { label: 'Chai 1.5L', value: 0 },
-                        { label: 'Chai 1.5L', value: 1 },
-                    ]}
-                />
-            {/* <View style={[styles.modal_container, {...dialogStyleProps}]} >
+            <View style={[styles.modal_container, {...dialogStyleProps}]} >
               <View style={styles.modal_body} >
                 <Text style={styles.title_modal}>{title}</Text>
-                <Text style={[this.props.message ? styles.message_modal : {height:0} ]}>Quy cách</Text>
-                
-                <Text style={[this.props.message ? styles.message_modal : {height:0} ]}>Số lượng</Text>
+                <Text style={styles.message_modal}>Quy cách</Text>
+                <Picker selectedValue = {this.state.user} onValueChange = {this.updateUser}>
+                  <Picker.Item label = "CHAI 1.5L" value = '0' />
+                  <Picker.Item label = "CHAI 1.0L" value = '1' />
+                </Picker>
+                <Text style={styles.message_modal}>Số lượng</Text>
                 <TextInput style={styles.input_container}
+                  autoCorrect={(textProps && textProps.autoCorrect==false)?false:true}
+                  autoCapitalize={(textProps && textProps.autoCapitalize)?textProps.autoCapitalize:'none'}
+                  clearButtonMode={(textProps && textProps.clearButtonMode)?textProps.clearButtonMode:'never'}
+                  clearTextOnFocus={(textProps && textProps.clearTextOnFocus==true)?textProps.clearTextOnFocus:false}
+                  keyboardType={(textProps && textProps.keyboardType)?textProps.keyboardType:'default'}
+                  secureTextEntry={(textProps && textProps.secureTextEntry)?textProps.secureTextEntry:false}
+                  maxLength={(textProps && textProps.maxLength > 0)?textProps.maxLength:null}
+                  autoFocus={true}
                   onKeyPress={this.handleOnKeyPress}
-                  keyboardType="numeric"
+                  underlineColorAndroid='transparent'
                   placeholder={hintInput}
                   placeholderTextColor={placeholderTextColor}
                   onChangeText={this.handleOnChangeText}
@@ -110,13 +106,13 @@ export default class PopUp extends PureComponent{
                   onPress={this.handleOnCloseDialog}>
                   <Text style={styles.btn_modal_left}>{cancelText}</Text>
                 </TouchableOpacity>
-                <View style={styles.divider_btn} />
+                <View style={styles.divider_btn}></View>
                 <TouchableOpacity  style={styles.touch_modal}
                   onPress={this.handleSubmit}>
                   <Text style={styles.btn_modal_right}>{submitText}</Text>
                 </TouchableOpacity>
               </View>
-            </View> */}
+            </View>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -133,8 +129,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...Platform.select({
       android:{
-        backgroundColor: 'rgba(0,0,0,0.62)',
-      },
+        backgroundColor: 'rgba(0,0,0,0.62)'
+      }
     }),
   },
   modal_container:{
@@ -187,7 +183,7 @@ const styles = StyleSheet.create({
       },
       android: {
         textAlign:'left',
-        marginTop: 20,
+        marginTop: 20
       },
     }),
   },
@@ -229,7 +225,7 @@ const styles = StyleSheet.create({
         maxHeight: 52,
         paddingTop: 8,
         paddingBottom: 8,
-      },
+      }
     }),
   },
   divider_btn:{
@@ -239,7 +235,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#B0B0B0',
       },
       android:{
-	      width: 0,
+	      width: 0
       },
     }),
   },
@@ -252,7 +248,7 @@ const styles = StyleSheet.create({
         paddingRight: 8,
         minWidth: 64,
         height: 36,
-      },
+      }
     }),
   },
   btn_modal_left:{
@@ -271,7 +267,7 @@ const styles = StyleSheet.create({
       android: {
         textAlign:'right',
         color:'#009688',
-        padding: 8,
+        padding: 8
       },
     }),
   },
@@ -287,7 +283,7 @@ const styles = StyleSheet.create({
       android: {
         textAlign:'right',
         color:'#009688',
-        padding: 8,
+        padding: 8
       },
     }),
   },
