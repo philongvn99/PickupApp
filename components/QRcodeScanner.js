@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFE5D8',
     fontSize: 44,
     alignContent: 'space-around',
-  },
+  }
 });
 
 AppRegistry.registerComponent('default', () => ScanScreen);

@@ -52,7 +52,7 @@ export default  class QRgenerator extends Component {
                 />
             </View>
         <View style={styles.bottom}>
-          <Text style={styles.bottomtext}>QR Code Scanner</Text>
+          <Text style={styles.bottomtext}>QR CODE GENERATOR</Text>
         </View>
       </SafeAreaView>
     );
@@ -90,15 +90,6 @@ const styles = StyleSheet.create({
         backgroundColor:'#F2CEF2',
         fontSize:44,
     },
-
-    buttonstyle: {
-      height: 50,
-      width: 200,
-      borderColor: 'gray',
-      borderWidth: 5,
-      margin: 10,
-      backgroundColor:'#F2CEF2',
-  },
 });
 
 AppRegistry.registerComponent('HelloWorld', () => HelloWorld);

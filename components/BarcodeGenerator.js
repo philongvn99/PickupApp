@@ -9,7 +9,7 @@ import {
     StyleSheet,
     TextInput,
     SafeAreaView,
-    TouchableOpacity,
+    Button
 } from 'react-native';
 import Barcode from 'react-native-barcode-builder';
 import firebase from 'firebase';
@@ -52,11 +52,19 @@ export default class BarCodeScreen extends Component {
                 height={200}
                 flat
             />
-            <TouchableOpacity
-                    style={styles.buttonstyle} 
-                    onPress={this.onBarCodeRead}>
-                    <Text> Generate Barcode </Text>
-            </TouchableOpacity>
+            <View>
+            <Button
+                style={styles.buttonstyle}
+                onPress={() => {
+                    if (this.state.QRString) {
+                      this.setState({QRCode: this.state.QRString});
+                      this.databaseRef.update({qrCodeGenerated: this.state.QRString});
+                    }
+                  }
+                }
+                title='GENERATE'
+                />
+            </View>
             <View  style={styles.bottom}>
                 <Text style={styles.bottomtext}>Barcode Generator</Text>
             </View>
@@ -100,11 +108,6 @@ const styles = StyleSheet.create(
     },
 
     buttonstyle: {
-        height: 50,
-        width: 200,
-        borderColor: 'gray',
-        borderWidth: 5,
-        margin: 10,
-        backgroundColor:'#F2CEF2',
+        backgroundColor:'darkcyan',
     },
     });
