@@ -25,7 +25,7 @@ export default class PickupScreen extends Component {
       visible: false,
       snapshot: null,
       floorItems: {
-        'floor-1': [],
+        'StoreSG': [],
         'floor-2': [],
         'floor-3': [],
         'floor-4': [],
@@ -45,7 +45,7 @@ export default class PickupScreen extends Component {
 
     ref.on('value', (snapshot) => {
       floorItems = {
-        'floor-1': [],
+        'StoreSG': [],
         'floor-2': [],
         'floor-3': [],
         'floor-4': [],

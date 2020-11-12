@@ -5,11 +5,13 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Component } from 'react';
 import MenuScreen       from './components/MenuScreen';
+import SGStore          from './components/SGStore';
 import Floor1Screen     from './components/Floor1Screen';
 import Floor2Screen     from './components/Floor2Screen';
 import Floor3Screen     from './components/Floor3Screen';
 import Floor4Screen     from './components/Floor4Screen';
 import PickupScreen     from './components/PickupScreen';
+import SGPickUpScreen   from './components/SGPickUpScreen';
 import ScanScreen       from './components/QRcodeScanner';
 import QRgenerator      from './components/QRcodeGenerator';
 import BarcodeGenerator from './components/BarcodeGenerator'
@@ -63,17 +65,27 @@ export default class App extends Component {
             }}
           />
 
-          <Tab.Screen name="Pickup"
-            component={PickupScreen}
+          <Tab.Screen name="SGPickUp"
+            component={SGPickUpScreen}
             options={{
-              tabBarLabel: 'Pickup',
+              tabBarLabel: 'SaiGon Pickup',
               tabBarIcon: ({ color, size }) => (
                 <MaterialCommunityIcons name="transfer" color={color} size={size} />
               ),
             }}
           />
 
-          <Tab.Screen name="Floor1" 
+          <Tab.Screen name="SGStore" 
+            component={SGStore} 
+            options={{
+              tabBarLabel: 'SGStore',
+              tabBarIcon: ({ color, size }) => (
+                <MaterialCommunityIcons name="home-floor-1" color={color} size={size} />
+              ),
+            }}
+          />
+
+          {/* <Tab.Screen name="Floor1" 
             component={Floor1Screen} 
             options={{
               tabBarLabel: 'Tầng 1',
@@ -111,7 +123,7 @@ export default class App extends Component {
                 <MaterialCommunityIcons name="home-roof" color={color} size={size} />
               ),
             }}
-          />
+          /> */}
 
           <Tab.Screen name="QR Scanner"
             component={ScanScreen}
