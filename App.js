@@ -80,7 +80,7 @@ export default class App extends Component {
             options={{
               tabBarLabel: 'SGStore',
               tabBarIcon: ({ color, size }) => (
-                <MaterialCommunityIcons name="home-floor-1" color={color} size={size} />
+                <MaterialCommunityIcons name="home-floor-0" color={color} size={size} />
               ),
             }}
           />
