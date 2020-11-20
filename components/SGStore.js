@@ -107,7 +107,7 @@ export default class SGStore extends Component {
             {
                 floor: floor,
                 index: tableIndex,
-                checkinTime: moment().format("HH:mm:ss"),
+                checkinTime: moment().format("DD-MMM-YYYY HH:mm:ss"),
                 checkoutTime: null,
                 isCurrentPosition: true,
             }
@@ -117,7 +117,7 @@ export default class SGStore extends Component {
         const pushedPostRefTable = rootRefTable.update({
               floor:floor,
               index:tableIndex,
-              updateTime: moment().format("HH:mm:ss"),
+            updateTime: moment().format("DD-MMM-YYYY HH:mm:ss"),
         });
 
     }
@@ -146,7 +146,8 @@ export default class SGStore extends Component {
                                 if (child.isServed) {
                                     table.prefill = 'green';
                                     table.status = this.TABLE_STATUS.SERVED;
-                                    table.tableNoForDisplay = '';
+                                    //table.tableNoForDisplay = '';
+                                    table.tableNoForDisplay = table.tableNo; //show table number on checkin
                                 }
                                 else if (child.isPickedUp) {
                                     table.prefill = 'orange';
@@ -291,7 +292,7 @@ export default class SGStore extends Component {
  //                       if (position.isCurrentPosition) {
                             database.ref('/bigstore-sg-current/' + childSnapshot.key).update({
                                 isServed: true,
-                                servedTime: moment().format("HH:mm:ss"),
+                                servedTime: moment().format("DD-MMM-YYYY HH:mm:ss"),
                             });
   //                      }
                     });
@@ -380,7 +381,7 @@ export default class SGStore extends Component {
                     if (position && position.floor && position.floor == floor && position.index == selectedIndex && position.isCurrentPosition) {
                         database.ref('/bigstore-sg-current/' + childSnapshot.key + '/positions/' + key).update({
                             isCurrentPosition: false,
-                            checkoutTime: moment().format("HH:mm:ss"),
+                            checkoutTime: moment().format("DD-MMM-YYYY HH:mm:ss"),
                         });
                     }
                 });

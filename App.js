@@ -55,7 +55,7 @@ export default class App extends Component {
     return (
       <NavigationContainer>
         <Tab.Navigator>
-          <Tab.Screen name="Menu"
+          {/* <Tab.Screen name="Menu"
             component={MenuScreen}
             options={{
               tabBarLabel: 'Menu',
@@ -63,7 +63,7 @@ export default class App extends Component {
                 <MaterialCommunityIcons name="menu" color={color} size={size} />
               ),
             }}
-          />
+          /> */}
 
           <Tab.Screen name="SGPickUp"
             component={SGPickUpScreen}
@@ -125,7 +125,7 @@ export default class App extends Component {
             }}
           /> */}
 
-          <Tab.Screen name="QR Scanner"
+          {/* <Tab.Screen name="QR Scanner"
             component={ScanScreen}
             options={{
               tabBarLabel: 'QR Scanner',
@@ -153,7 +153,7 @@ export default class App extends Component {
                 <MaterialCommunityIcons name="home-roof" color={color} size={size} />
               ),
             }}
-          />
+          /> */}
 
         </Tab.Navigator>
       </NavigationContainer>

@@ -141,7 +141,7 @@ export default class SGPickUpScreen extends Component {
               database.ref('/bigstore-sg-current/' + childSnapshot.key).update({
                 isServed: true,
                 isPickedUp: true,
-                pickedUpTime: moment().format('HH:mm:ss'),
+                pickedUpTime: moment().format("DD-MMM-YYYY HH:mm:ss"),
               });
             }
           });
