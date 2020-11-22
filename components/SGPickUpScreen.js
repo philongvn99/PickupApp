@@ -4,7 +4,7 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react/no-did-mount-set-state */
 import * as React from 'react';
-import {Text, View, Button, TouchableOpacity, StyleSheet} from 'react-native';
+import { Text, View, Button, TouchableOpacity, StyleSheet, TextInput} from 'react-native';
 import {Component} from 'react';
 import firebase from 'firebase';
 import AnimatedLoader from 'react-native-animated-loader';
@@ -16,6 +16,7 @@ export default class SGPickUpScreen extends Component {
     super(props);
     this.state = {
       isModalVisible: false,
+      isModalAddOrderVisible: false,
       selectedIndex: -1,
       selectedFloor: -1,
       selectedTableNo: '',
@@ -24,9 +25,7 @@ export default class SGPickUpScreen extends Component {
       message: '',
       visible: false,
       snapshot: null,
-      floorItems: {
-        'StoreSG': [],
-      },
+      floorItems: [],
     };
   }
 
@@ -37,31 +36,27 @@ export default class SGPickUpScreen extends Component {
       visible: true,
     });
     const database = firebase.database();
-    const ref = database.ref('/bigstore-sg-current');
-    const refRFID = database.ref('/rfid-reader');
+    const ref = database.ref('/bigstore-sg-current-orders');
 
     ref.on('value', (snapshot) => {
-      floorItems = {
-        'StoreSG': []
-      };
+      floorItems = [];
       snapshot.forEach((childSnapshot) => {
-        let child = childSnapshot.val();
-        let keys = child.positions != null ? Object.keys(child.positions) : [];
-
-        if (!child.isServed && !child.isPickedUp) {
-          keys.forEach((key) => {
-            let position = child.positions[key];
-            if (position.isCurrentPosition) {
-              floorItems[position.floor].push({
-                index: position.index,
-                tableNo: child.tableNo,
-              });
-            }
-          });
+          let child = childSnapshot.val();          
+          floorItems.push({
+            tableNo: child.tableNo,
+          })
         }
-      });
-      this.setState({floorItems, visible: false});
-    });
+    )    
+    this.setState({ floorItems, visible: false });    
+  })
+    
+}
+
+  TABLE_STATUS = {
+    'AVAILABLE': 0,
+    'CHECKED_IN': 1,
+    'PICKED_UP': 2,
+    "SERVED": 3,
   }
 
   render() {
@@ -78,8 +73,13 @@ export default class SGPickUpScreen extends Component {
           />
         </View>
 
+        <Button style={{ flex: 1, margin: 10 }}
+          onPress={() => {
+            this.showModalAddOrderVisible(true)
+          }} title="Thêm Order" />
+
         <View style={{flex: 1}}>
-            {this.renderFloor(0, 'topLeft')}
+            {this.renderFloor('topLeft')}
         </View>
 
         <Modal
@@ -112,15 +112,113 @@ export default class SGPickUpScreen extends Component {
             </View>
           </View>
         </Modal>
+
+        <Modal isVisible={this.state.isModalAddOrderVisible}
+          onBackdropPress={() => this.setState({ isModalAddOrderVisible: false, selectedIndex: -1, selectedStatus: -1, isShowMessage: false, modalTableNo: '' })}
+          onShow={() => {
+            this.modalTableNo.focus();
+          }
+          }
+        >
+          <View style={{
+            flex: 1,
+            alignItems: 'center',
+            maxHeight: 200,
+            justifyContent: 'center',
+            backgroundColor: '#FFF',
+          }}>
+
+            {<View style={{ display: 'flex', flexDirection: 'row', padding: 10, alignContent: 'center', justifyContent: 'center', alignItems: 'center' }}>
+              <TextInput
+                onSubmitEditing={() => this.saveNewOrder()}
+                keyboardType="numeric"
+                style={{
+                  flex: 1,
+                  borderColor: 'gray',
+                  borderWidth: 1,
+                  fontSize: 20,
+                }}
+                ref={(input) => { this.modalTableNo = input; }}
+                placeholder="Nhập thẻ bàn"
+                onChangeText={value => this.onChangeText(value)}
+                value={this.state.modalTableNo}
+              />
+
+              <Button style={{ flex: 1 }}
+                onPress={() => {
+                  this.saveNewOrder();
+                }} title="Tạo Order" />
+            </View>
+            }
+
+            {this.state.isShowMessage && <View><Text style={{ color: 'red', fontSize: 20, margin: 20 }}>{this.state.message}</Text></View>}
+
+          </View>
+        </Modal>
+
       </View>
     );
   }
 
+  onChangeText(text) {
+    this.setState({
+      modalTableNo: text,
+    });
+  }
+
+  async showModalAddOrderVisible(value) {
+    this.setState({isModalAddOrderVisible: value})
+  }
+
+  async saveNewOrder() {
+    let { modalTableNo } = this.state;
+
+    const database = firebase.database();
+    const rootRef = database.ref('/bigstore-sg-current-orders');
+    let found = false;
+
+    await rootRef.orderByChild("tableNo").equalTo(modalTableNo).once("value", function (snapshot) {
+      snapshot.forEach(childSnapshot => {
+        let child = childSnapshot.val();
+        if (!child.isServed) {
+              found = true
+        }
+      });
+    });
+
+    if (!found) {
+      this.setState({
+        isModalVisible: false,
+        selectedIndex: -1,
+        selectedStatus: -1,
+        modalTableNo: '',
+        isShowMessage: false,
+      });
+      this.addNewOrder(modalTableNo);
+      this.showModalAddOrderVisible(false)
+    }
+    else {
+      this.setState({
+        isShowMessage: true,
+        message: 'Thẻ bàn đang sử dụng'
+      });
+    }
+  }
+
+  addNewOrder(tableNo) {
+    const database = firebase.database();
+    const rootRef = database.ref('/bigstore-sg-current-orders');
+    rootRef.push({
+      tableNo: Number(tableNo),
+      isServed: false,
+    });
+  }
+
   async pickup() {
-    let {selectedFloor, selectedIndex, selectedTableNo} = this.state;
+    let { selectedIndex, selectedTableNo} = this.state;
     let floor = 'StoreSG'
     console.log(selectedTableNo);
-    const database = firebase.database();
+     const database = firebase.database();
     const rootRef = database.ref('/bigstore-sg-current');
     await rootRef
       .orderByChild('tableNo')
@@ -148,6 +246,16 @@ export default class SGPickUpScreen extends Component {
         });
       });
 
+    const rootOrderRef = database.ref('/bigstore-sg-current-orders');
+    await rootOrderRef
+      .orderByChild('tableNo')
+      .equalTo(selectedTableNo)
+      .once('value', function (snapshot) {
+        snapshot.forEach((childSnapshot) => {
+          database.ref('/bigstore-sg-current-orders/' + childSnapshot.key).remove()
+      })
+    })
+
     this.setState({
       isModalVisible: false,
       selectedIndex: -1,
@@ -157,7 +265,7 @@ export default class SGPickUpScreen extends Component {
     });
   }
 
-  renderFloor(floor, pos) {
+  renderFloor(pos) {
     return (
       <View
         style={[
@@ -172,24 +280,16 @@ export default class SGPickUpScreen extends Component {
             ? this.styles.bottomRightCell
             : '',
         ]}>
-        <View
-          style={[
-            {flex: 1.5, backgroundColor: '#ddd'},
-            this.styles.sectionHeader,
-          ]}>
-          <Text>Store Saigon</Text>
-        </View>
         <View style={{flex: 8.5, flexDirection: 'row', flexWrap: 'wrap'}}>
-          {this.renderFloorItems('0')}
+          {this.renderFloorItems()}
         </View>
       </View>
     );
   }
 
-  renderFloorItems(floor) {
-    let {floorItems} = this.state;
-    let currentFloorItems = floorItems['StoreSG'];
-    return currentFloorItems.map((item) => {
+  renderFloorItems() {    
+    let {floorItems} = this.state;    
+    return floorItems.map((item) => {
       return (
         <TouchableOpacity
           style={{
@@ -200,9 +300,7 @@ export default class SGPickUpScreen extends Component {
           onPress={() => {
             this.showModal();
             this.setState({
-              selectedIndex: item.index,
               selectedTableNo: item.tableNo,
-              selectedFloor: floor,
             });
           }}>
           <View
