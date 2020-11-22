@@ -325,31 +325,31 @@ export default class SGStore extends Component {
         let { modalTableNo } = this.state;
         const database = firebase.database();
         const rootRef = database.ref('/bigstore-sg-current');
-        let result = -1;
+        let found = false;        
 
-        await rootRef.orderByChild("tableNo").equalTo(modalTableNo).once("value", function (snapshot) {
+        await rootRef.orderByChild("tableNo").once("value", function (snapshot) {
             snapshot.forEach(childSnapshot => {
                 let child = childSnapshot.val();
-                if (!child.isServed) {
+                if (!child.isServed && child.tableNo == modalTableNo) {
                     let keys = child.positions != null ? Object.keys(child.positions) : [];
 
                     keys.forEach(key => {
                         let position = child.positions[key];
                         if (position.isCurrentPosition) {
-                            result = position.floor.replace('floor-', '');
+                            found = true
                         }
                     });
                 }
             });
         });
 
-        return result;
+        return found;
     }
 
     async checkin() {
         let {tables, selectedIndex, modalTableNo} = this.state;
         let found = await this.checkDuplicatedTableNo();
-        if (found <= 0) {
+        if (!found) {
             this.setState({
                 isModalVisible: false,
                 selectedIndex: -1,
@@ -362,7 +362,7 @@ export default class SGStore extends Component {
         else {
             this.setState({
                 isShowMessage: true,
-                message: 'Thẻ bàn đang sử dụng ở tầng ' + found,
+                message: 'Thẻ bàn đang sử dụng',
             });
         }
     }

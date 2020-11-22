@@ -73,12 +73,28 @@ export default class SGPickUpScreen extends Component {
           />
         </View>
 
-        <Button style={{ flex: 1, margin: 10 }}
+        {/* <Button style={{ flex: 1, margin: 10, padding: 20, fontSize: 20 }}
           onPress={() => {
             this.showModalAddOrderVisible(true)
-          }} title="Thêm Order" />
+          }} title="Thêm Order" /> */}
+          <TouchableOpacity style={{ flex: 1, margin: 10}}
+            onPress={() => {
+              this.showModalAddOrderVisible(true)
+            }}>
+          <View
+            style={[
+              { borderRadius: 5 },
+              { flex: 1 },
+              { backgroundColor: 'gray' },
+              { alignItems: 'center' },
+              { justifyContent: 'center' },
+            ]}>
+            <Text style={{fontSize: 20, color: '#FFF'}}>Thêm Order</Text>
+            </View>
+            
+          </TouchableOpacity>
 
-        <View style={{flex: 1}}>
+        <View style={{flex: 9}}>
             {this.renderFloor('topLeft')}
         </View>
 
@@ -175,14 +191,16 @@ export default class SGPickUpScreen extends Component {
 
     const database = firebase.database();
     const rootRef = database.ref('/bigstore-sg-current-orders');
-    let found = false;
+    let found = false;    
 
-    await rootRef.orderByChild("tableNo").equalTo(modalTableNo).once("value", function (snapshot) {
+    await rootRef.orderByChild("tableNo").once("value", function (snapshot) {
+      console.log(snapshot.val())
       snapshot.forEach(childSnapshot => {
         let child = childSnapshot.val();
-        if (!child.isServed) {
-              found = true
-        }
+        if (child.tableNo==modalTableNo && child.isServed==false) {
+          found = true
+        }        
+        
       });
     });
 
@@ -215,7 +233,7 @@ export default class SGPickUpScreen extends Component {
   }
 
   async pickup() {
-    let { selectedIndex, selectedTableNo} = this.state;
+    let { selectedTableNo} = this.state;
     let floor = 'StoreSG'
     console.log(selectedTableNo);
      const database = firebase.database();
@@ -233,11 +251,10 @@ export default class SGPickUpScreen extends Component {
             let position = child.positions[key];
             if (
               position.floor == floor &&
-              position.index == selectedIndex &&
               position.isCurrentPosition
             ) {
               database.ref('/bigstore-sg-current/' + childSnapshot.key).update({
-                isServed: true,
+                //isServed: true,
                 isPickedUp: true,
                 pickedUpTime: moment().format("DD-MMM-YYYY HH:mm:ss"),
               });
