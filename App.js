@@ -65,17 +65,17 @@ export default class App extends Component {
             }}
           /> */}
 
-          <Tab.Screen name="SGPickUp"
-            component={SGPickUpScreen}
+          <Tab.Screen name="Pickup"
+            component={PickupScreen}
             options={{
-              tabBarLabel: 'SaiGon Pickup',
+              tabBarLabel: 'Pickup',
               tabBarIcon: ({ color, size }) => (
                 <MaterialCommunityIcons name="transfer" color={color} size={size} />
               ),
             }}
           />
 
-          <Tab.Screen name="SGStore" 
+          {/*<Tab.Screen name="SGStore" 
             component={SGStore} 
             options={{
               tabBarLabel: 'SGStore',
@@ -83,9 +83,9 @@ export default class App extends Component {
                 <MaterialCommunityIcons name="home-floor-0" color={color} size={size} />
               ),
             }}
-          />
+          /> */}
 
-          {/* <Tab.Screen name="Floor1" 
+          <Tab.Screen name="Floor1" 
             component={Floor1Screen} 
             options={{
               tabBarLabel: 'Tầng 1',
@@ -123,7 +123,7 @@ export default class App extends Component {
                 <MaterialCommunityIcons name="home-roof" color={color} size={size} />
               ),
             }}
-          /> */}
+          /> 
 
           {/* <Tab.Screen name="QR Scanner"
             component={ScanScreen}

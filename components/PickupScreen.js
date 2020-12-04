@@ -25,7 +25,7 @@ export default class PickupScreen extends Component {
       visible: false,
       snapshot: null,
       floorItems: {
-        'StoreSG': [],
+        'floor-1': [],
         'floor-2': [],
         'floor-3': [],
         'floor-4': [],
@@ -45,7 +45,7 @@ export default class PickupScreen extends Component {
 
     ref.on('value', (snapshot) => {
       floorItems = {
-        'StoreSG': [],
+        'floor-1': [],
         'floor-2': [],
         'floor-3': [],
         'floor-4': [],
@@ -151,7 +151,7 @@ export default class PickupScreen extends Component {
             ) {
               database.ref('/current/' + childSnapshot.key).update({
                 isPickedUp: true,
-                pickedUpTime: moment().format('HH:mm:ss'),
+                pickedUpTime: moment().format('DD-MMM-YYYY HH:mm:ss'),
               });
             }
           });
