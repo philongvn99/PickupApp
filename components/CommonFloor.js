@@ -1,8 +1,3 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable eqeqeq */
-/* eslint-disable quotes */
-/* eslint-disable react-native/no-inline-styles */
-/* eslint-disable prettier/prettier */
 import React, { Component } from "react";
 import {
     View,
@@ -103,11 +98,12 @@ export default class CommonFloor extends Component {
             isServed: false,
         });
         const newId = pushedPostRef.getKey();
+        const checkinTime = moment().format("DD-MMM-YYYY HH:mm:ss")
         rootRef.child(newId + '/positions').push(
             {
                 floor: floor,
                 index: tableIndex,
-                checkinTime: moment().format("DD-MMM-YYYY HH:mm:ss"),
+                checkinTime,
                 checkoutTime: null,
                 isCurrentPosition: true,
             }
@@ -119,6 +115,24 @@ export default class CommonFloor extends Component {
               index:tableIndex,
             updateTime: moment().format("DD-MMM-YYYY HH:mm:ss"),
         });
+
+        const orderRef = database.ref('/current-orders');
+        orderRef
+            .orderByChild('tableNo')
+            .equalTo(parseInt(tableNo))
+            .once('value', function (snapshot) {
+                snapshot.forEach((childSnapshot) => {
+                    //let child = childSnapshot.val();
+                    // if (child.tableNo == tableNo) {
+                        database.ref('/current-orders/' + childSnapshot.key).update({
+                            isCheckedIn: true,
+                            checkinTime,
+                            checkinFloor: floor,
+                            tableIndex
+                        });
+                    //}
+                });
+            }); 
 
     }
 
@@ -146,7 +160,8 @@ export default class CommonFloor extends Component {
                                 if (child.isServed) {
                                     table.prefill = 'green';
                                     table.status = this.TABLE_STATUS.SERVED;
-                                    table.tableNoForDisplay = '';
+                                    // table.tableNoForDisplay = '';
+                                    table.tableNoForDisplay = table.tableNo;
                                 }
                                 else if (child.isPickedUp) {
                                     table.prefill = 'orange';
@@ -281,19 +296,19 @@ export default class CommonFloor extends Component {
         let { selectedIndex, selectedTableNo } = this.state;
         const database = firebase.database();
         const rootRef = database.ref('/current');
-        await rootRef.orderByChild("tableNo").equalTo(selectedTableNo).once("value", snapshot => {
+        await rootRef.orderByChild("tableNo").equalTo(parseInt(selectedTableNo)).once("value", snapshot => {
             snapshot.forEach(childSnapshot => {
                 let child = childSnapshot.val();
                 if (!child.isServed) {
                     let keys = child.positions != null ? Object.keys(child.positions) : [];
                     keys.forEach(key => {
                         let position = child.positions[key];
- //                       if (position.isCurrentPosition) {
+                        if (position.isCurrentPosition) {
                             database.ref('/current/' + childSnapshot.key).update({
                                 isServed: true,
                                 servedTime: moment().format("DD-MMM-YYYY HH:mm:ss"),
                             });
-  //                      }
+                        }
                     });
                 }
             });
@@ -325,10 +340,12 @@ export default class CommonFloor extends Component {
         const database = firebase.database();
         const rootRef = database.ref('/current');
         let result = -1;
+        console.log('checking duplicated', modalTableNo)
 
-        await rootRef.orderByChild("tableNo").equalTo(modalTableNo).once("value", function (snapshot) {
+        await rootRef.orderByChild("tableNo").equalTo(parseInt(modalTableNo)).once("value", function (snapshot) {
             snapshot.forEach(childSnapshot => {
                 let child = childSnapshot.val();
+                console.log('child=>', child)
                 if (!child.isServed) {
                     let keys = child.positions != null ? Object.keys(child.positions) : [];
 
@@ -342,13 +359,22 @@ export default class CommonFloor extends Component {
             });
         });
 
+        console.log('end checking duplicated')
+
         return result;
     }
 
     async checkin() {
         let {tables, selectedIndex, modalTableNo} = this.state;
+        let orderCreated = await this.checkOrderCreated();
         let found = await this.checkDuplicatedTableNo();
-        if (found <= 0) {
+
+        if (!orderCreated) {
+            this.setState({
+                isShowMessage: true,
+                message: 'Chưa tạo order cho thẻ bàn này',
+            });
+        }else if (found <= 0) {
             this.setState({
                 isModalVisible: false,
                 selectedIndex: -1,
@@ -366,12 +392,29 @@ export default class CommonFloor extends Component {
         }
     }
 
+    async checkOrderCreated() {
+        let { modalTableNo } = this.state;
+        const database = firebase.database();
+        const rootRef = database.ref('/current-orders');
+        let orderCreated = false;
+
+        await rootRef.orderByChild("tableNo").once("value", function (snapshot) {
+            snapshot.forEach(childSnapshot => {
+                let child = childSnapshot.val();
+                if (child.tableNo == modalTableNo)
+                    orderCreated = true
+            });
+        });
+
+        return orderCreated
+    }
+
     async checkout() {
         let { selectedIndex, selectedTableNo } = this.state;
         let floor = this.props.floor;
         const database = firebase.database();
         const rootRef = database.ref('/current');
-        await rootRef.orderByChild("tableNo").equalTo(selectedTableNo).once("value", snapshot => {
+        await rootRef.orderByChild("tableNo").equalTo(parseInt(selectedTableNo)).once("value", snapshot => {
             snapshot.forEach(childSnapshot => {
                 let child = childSnapshot.val();
                 let keys = child.positions != null ? Object.keys(child.positions) : [];
