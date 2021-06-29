@@ -49,7 +49,7 @@ export default class CommonFloor extends Component {
             visible: true,
         });
         const database = firebase.database();
-        const ref = database.ref('/config/tables');
+        const ref = database.ref('/config/tables_1');
         ref.child(this.props.floor).once('value', snapshot => {
             let tables = [];
             snapshot.forEach(t=>{
@@ -212,8 +212,8 @@ export default class CommonFloor extends Component {
 
                 <View style={{ flex: 1, alignItems: 'center', padding: 0 }}>
                     <ImageMapper
-                        imgHeight={1064}
-                        imgWidth={600}
+                        imgHeight={1080}
+                        imgWidth={1920}
                         imgSource={this.props.floor == 'floor-1' ? require("../assets/images/floor-1.png") : (this.props.floor == 'floor-2' ? require("../assets/images/floor-2.png") : (this.props.floor == 'floor-3' ? require("../assets/images/floor-3.png") : require("../assets/images/floor-4.png")))}
                         imgMap={tables}
                         onPress={(item, idx, event) => this.mapperAreaClickHandler(item, idx, event)}
